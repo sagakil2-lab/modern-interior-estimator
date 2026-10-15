@@ -1,0 +1,9 @@
+{
+  "appId": "com.moderninterior.bathroom",
+  "appName": "모던인테리어 욕실 견적 앱",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

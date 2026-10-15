@@ -1,2 +1,10 @@
-# modern-interior-estimator
-모던 인테리어 견적 프로그램
+# 모던인테리어 욕실 견적 PWA
+
+## 실행
+- VS Code Live Server로 `index.html` 열기
+- 또는 터미널에서 `python -m http.server` 실행 후 브라우저로 접속
+
+## 이번 버전 추가 기능
+- 욕실 1개 / 2개 / 3개 각각 독립 산출
+- 추천안 적용 후 STEP 3에서 일부 품목 교체 가능
+- 최종 견적서에서 욕실별 상세 내역과 프로젝트 합계 동시 표시
