@@ -899,7 +899,7 @@ let currentModalCaseId = null;
 function saveCaseRefAndNavigate() {
   const c = CASES.find(x => x.id === currentModalCaseId);
   localStorage.setItem('bathroom_force_step1', '1');
-  if (!c) { location.href = './index.html'; return; }
+  if (!c) { location.href = './bathroom.html'; return; }
   const totalCost = Object.values(c.costs).reduce((a, v) => a + v, 0);
   const ref = {
     id: c.id, title: c.title, concept: c.concept,
@@ -909,7 +909,7 @@ function saveCaseRefAndNavigate() {
     tags: c.tags,
   };
   localStorage.setItem(CASE_REF_KEY, JSON.stringify(ref));
-  location.href = './index.html';
+  location.href = './bathroom.html';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
