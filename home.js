@@ -548,8 +548,12 @@ let casePage = 0;
 let casePhotoMap = {};
 
 function loadCasePhotos() {
-  try { casePhotoMap = JSON.parse(localStorage.getItem('bathroom_case_photos') || '{}'); }
-  catch { casePhotoMap = {}; }
+  // 기본값: cases-photos-data.js (images/cases 폴더 목록, 모든 방문자 공통)
+  // 관리자가 이 브라우저에서 따로 지정한 값(localStorage)이 있으면 그것이 우선
+  let local = {};
+  try { local = JSON.parse(localStorage.getItem('bathroom_case_photos') || '{}'); }
+  catch { local = {}; }
+  casePhotoMap = Object.assign({}, window._CASE_PHOTOS || {}, local);
 }
 
 // ─────────────────────────────────────────────

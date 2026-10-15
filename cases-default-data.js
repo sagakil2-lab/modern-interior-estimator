@@ -41,7 +41,7 @@ window._DEFAULT_CASES_DATA = [
       { name: '스마트 비데', brand: '코웨이', qty: 1, unit: 'EA', unit_price: 325000 },
       { name: '저소음 환풍기', brand: '힘펠', qty: 1, unit: 'EA', unit_price: 89000 },
     ],
-    costs: { material: 1681000, labor: 780000, demolition: 200000, waterproofing: 140000, misc: 80000 },
+    costs: { material: 1730000, labor: 780000, demolition: 200000, waterproofing: 140000, misc: 80000 },
   },
   {
     id: 'c003',
@@ -64,7 +64,7 @@ window._DEFAULT_CASES_DATA = [
       { name: '비데 프리미엄', brand: '노비타', qty: 1, unit: 'EA', unit_price: 298000 },
       { name: 'DC 저소음 환풍기', brand: '힘펠', qty: 1, unit: 'EA', unit_price: 165000 },
     ],
-    costs: { material: 2866100, labor: 1100000, demolition: 280000, waterproofing: 200000, misc: 150000 },
+    costs: { material: 2896100, labor: 1100000, demolition: 280000, waterproofing: 200000, misc: 150000 },
   },
   {
     id: 'c004',
@@ -86,7 +86,7 @@ window._DEFAULT_CASES_DATA = [
       { name: '아르노 스퀘어 샤워수전', brand: '대림바스', qty: 1, unit: 'EA', unit_price: 285000 },
       { name: 'LED 조명 환풍기', brand: '힘펠', qty: 1, unit: 'EA', unit_price: 145000 },
     ],
-    costs: { material: 2739000, labor: 900000, demolition: 240000, waterproofing: 160000, misc: 120000 },
+    costs: { material: 2812000, labor: 900000, demolition: 240000, waterproofing: 160000, misc: 120000 },
   },
   {
     id: 'c005',
@@ -108,7 +108,7 @@ window._DEFAULT_CASES_DATA = [
       { name: '샤워수전', brand: '오투바스', qty: 1, unit: 'EA', unit_price: 64000 },
       { name: '환풍기 기본형', brand: '크린텍', qty: 1, unit: 'EA', unit_price: 42000 },
     ],
-    costs: { material: 1053900, labor: 600000, demolition: 150000, waterproofing: 100000, misc: 60000 },
+    costs: { material: 1008900, labor: 600000, demolition: 150000, waterproofing: 100000, misc: 60000 },
   },
   {
     id: 'c006',
@@ -131,7 +131,7 @@ window._DEFAULT_CASES_DATA = [
       { name: '스마트 비데', brand: '코웨이', qty: 1, unit: 'EA', unit_price: 325000 },
       { name: '열회수형 환기장치', brand: '힘펠', qty: 1, unit: 'EA', unit_price: 380000 },
     ],
-    costs: { material: 3801900, labor: 1300000, demolition: 350000, waterproofing: 250000, misc: 200000 },
+    costs: { material: 3532400, labor: 1300000, demolition: 350000, waterproofing: 250000, misc: 200000 },
   },
   {
     id: 'c007',
@@ -153,7 +153,7 @@ window._DEFAULT_CASES_DATA = [
       { name: '샤워욕조수전', brand: '오투바스', qty: 1, unit: 'EA', unit_price: 163900 },
       { name: '비데 프리미엄', brand: '코웨이', qty: 1, unit: 'EA', unit_price: 288000 },
     ],
-    costs: { material: 2520000, labor: 850000, demolition: 220000, waterproofing: 160000, misc: 100000 },
+    costs: { material: 2501000, labor: 850000, demolition: 220000, waterproofing: 160000, misc: 100000 },
   },
   {
     id: 'c008',
@@ -175,6 +175,6 @@ window._DEFAULT_CASES_DATA = [
       { name: '샤워수전', brand: '오투바스', qty: 1, unit: 'EA', unit_price: 85500 },
       { name: '저소음 환풍기', brand: '힘펠', qty: 1, unit: 'EA', unit_price: 89000 },
     ],
-    costs: { material: 1015100, labor: 650000, demolition: 170000, waterproofing: 120000, misc: 70000 },
+    costs: { material: 935100, labor: 650000, demolition: 170000, waterproofing: 120000, misc: 70000 },
   },
 ];
