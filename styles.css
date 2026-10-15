@@ -235,3 +235,100 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(19,87,197,.12);bo
 @media (max-width: 1180px){.layout{grid-template-columns:1fr}.sidebar,.summary{order:2}.content{order:1}}
 @media (max-width: 760px){.app-shell{padding:12px}.grid.two,.estimate-grid,.checkbox-grid,.extra-tiles-grid{grid-template-columns:1fr}.opt-cards-grid{grid-template-columns:repeat(2,1fr)}.section-head,.topbar,.reco-head{flex-direction:column;align-items:flex-start}.price-row{flex-direction:column;align-items:flex-start}.primary,.secondary,.ghost{width:100%}.budget-input-row{flex-wrap:wrap}.budget-per-bath{width:100%}}
 @media print {.topbar,.sidebar,.summary,.actions,[data-prev-step],[data-next-step],#installBtn,#resetBtn,.toolbar,#catalogToolbar,#catalogWizardProgress,.storage-note,.bath-tabs,.est-replace-btn{display:none!important}.layout{display:block}.content>.card{border:none;box-shadow:none;padding:0}.step-panel{display:none!important}.step-panel[data-step-panel="5"]{display:block!important}.app-shell{max-width:none;padding:0}.estimate-document,.estimate-section,.estimate-box,.estimate-total{border:none;box-shadow:none;background:#fff}}
+
+/* ═════════════════════════════════════════════════════════════
+   모바일 최적화 (견적기 공통: 욕실 / 상가 / 종합인테리어)
+   — 데스크톱 화면에는 영향 없도록 전부 media query 안에 둠
+   ═════════════════════════════════════════════════════════════ */
+
+/* 1) 가로 넘침 방지: 1fr 은 내용물의 최소 너비만큼 늘어나서 화면보다 넓어질 수 있음 */
+@media (max-width:1180px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .layout>*{min-width:0}
+}
+
+@media (max-width:760px){
+  html{background-attachment:scroll}                 /* iOS 에서 fixed 배경이 깨지거나 느려지는 문제 */
+  body{word-break:keep-all;overflow-wrap:break-word;-webkit-text-size-adjust:100%}  /* 한글이 단어 중간에서 끊기지 않게 */
+  .app-shell{padding:10px 10px calc(96px + env(safe-area-inset-bottom))}           /* 하단 고정 버튼 자리 */
+
+  /* 상단 헤더: 버튼을 한 줄에 */
+  .topbar{padding:16px;gap:10px;margin-bottom:10px}
+  .topbar h1{font-size:1.3rem}
+  .topbar-actions{width:100%;flex-wrap:wrap;gap:8px}
+  .topbar-actions>*:not(.hidden){flex:1 1 90px;min-width:0;width:auto;min-height:44px;padding:10px 6px!important;display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap}
+
+  /* 진행 단계: 위쪽 고정 가로 스텝바 (현재 단계만 글자 표시) */
+  .sidebar{order:0!important;position:sticky;top:0;z-index:40;padding:8px 10px;border-radius:14px;margin:0 0 -2px}
+  .sidebar h2,.sidebar .sidebar-note{display:none}
+  .steps{flex-direction:row;margin:0;gap:6px}
+  .steps{gap:4px}
+  .steps li{flex:0 0 auto;min-width:0;font-size:0;gap:0;padding:6px;min-height:40px;justify-content:center}
+  /* 현재 단계: 글자가 길면 … 으로 줄임 */
+  .steps li.active{flex:1 1 0;display:block;font-size:.84rem;line-height:26px;padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .steps li.active::before{display:inline-flex;vertical-align:middle;margin-right:8px}
+  .summary{order:3}
+
+  /* 카드/폼 여백 */
+  .sidebar,.summary,.content>.card{padding:14px}
+  .section-head{gap:6px}
+  .section-head h2{font-size:1.25rem}
+  .bathroom-card,.bathroom-form-card,.cart-bathroom,.reco-card,.estimate-section,.estimate-box{padding:12px}
+  .grid{gap:12px}
+  label[style*="span 2"]{grid-column:auto!important}
+
+  /* 입력창: 16px 미만이면 iOS 가 포커스 때 화면을 확대함 + 터치 높이 확보 */
+  input,select,textarea{font-size:16px;min-height:46px}
+  input[type="checkbox"],input[type="radio"],input[type="range"]{min-height:0}
+  .primary,.secondary,.ghost{min-height:46px}
+  .bath-tabs button,.bath-tabs .tab{min-height:42px}
+  .budget-input-row{gap:8px}
+  .budget-per-bath{white-space:normal}
+
+  /* 견적서/표 */
+  .estimate-header{flex-direction:column;gap:10px}
+  .estimate-total{max-width:none;margin-left:0}
+  .estimate-table,.reco-table{font-size:.85rem}
+  .estimate-table th,.estimate-table td,.reco-table th,.reco-table td{padding:8px 6px}
+  /* display:grid 컨테이너는 칸 너비를 minmax(0,1fr) 로 제한해야 안쪽 표·버튼 때문에 화면이 넓어지지 않음 */
+  .estimate-document,.bathroom-overview,.catalog,.recommendations,.cart-list{grid-template-columns:minmax(0,1fr)}
+  .estimate-document>*,.bathroom-overview>*,.catalog>*,.cart-list>*{min-width:0}
+  .estimate-section,.estimate-box{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .est-replace-btn,.shop-link{white-space:normal}
+  .card-img-wrap{height:140px}
+  .product-detail-img{height:200px}
+
+  /* 모달 → 화면 아래에서 올라오는 시트 형태 */
+  .reco-modal{padding:0;align-items:flex-end}
+  .reco-modal-box{max-width:none;max-height:92vh;max-height:92dvh;border-radius:18px 18px 0 0}
+  .reco-modal-header,.reco-modal-body,.replace-modal-search,.replace-modal-body{padding-left:16px;padding-right:16px}
+  .reco-modal-footer{padding:12px 16px calc(12px + env(safe-area-inset-bottom));flex-wrap:wrap}
+  .reco-modal-footer>*{flex:1 1 auto}
+  .reco-modal-close{min-width:44px;min-height:44px;font-size:1.7rem}
+
+  /* 하단 고정 이전/다음 버튼 (STEP 3·4) */
+  .step-panel.active .step-nav-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid var(--line);border-bottom:0;box-shadow:0 -6px 20px rgba(14,30,66,.10)}
+  .step-panel.active .step-nav-bar{box-sizing:border-box;gap:8px}
+  .step-nav-btn{flex:1 1 0;width:auto;min-width:0;min-height:48px;padding:12px 8px;font-size:.9rem}
+  /* 담은 자재 한 줄: 금액·삭제 버튼 영역이 줄어들 수 있게 하고, 좁으면 줄바꿈 */
+  .item-pill{flex-wrap:wrap;row-gap:6px}
+  .pill-right{flex-shrink:1;margin-left:auto}
+
+  /* 최종 견적서(STEP 5): '업체에 문의' 버튼을 화면 아래 고정 — 핵심 전환 버튼 */
+  .step-panel.active #inquiryBtn,.step-panel.active #intInquiryBtn,.step-panel.active #comInquiryBtn{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:60;width:auto;min-height:54px;font-size:1rem;background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 8px 24px rgba(19,87,197,.35)}
+  /* 견적서 상단의 저장/인쇄 버튼들은 2열 그리드로 작게 */
+  .section-head .actions.compact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}
+  .section-head .actions.compact>button{width:auto;padding:10px 6px;font-size:.86rem;line-height:1.3;white-space:normal}
+}
+
+/* STEP 1·2 하단 고정 이전/다음 (:has 미지원 브라우저는 기존 배치 그대로 표시) */
+@media (max-width:760px){
+  .step-panel.active>.actions:has([data-next-step],[id$="Next"]){position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(14,30,66,.10);flex-wrap:nowrap}
+  .step-panel.active>.actions:has([data-next-step],[id$="Next"])>*{flex:1}
+  .step-panel.active>.actions:has([data-next-step],[id$="Next"])>div{flex:2;display:flex;gap:8px}
+  .step-panel.active>.actions:has([data-next-step],[id$="Next"]) button{flex:1;min-height:48px;padding:10px 8px;font-size:.92rem}
+}
+@media (max-width:380px){
+  .topbar h1{font-size:1.15rem}
+  .steps li.active{font-size:.8rem}
+}

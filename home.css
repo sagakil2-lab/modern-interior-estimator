@@ -1057,3 +1057,57 @@ img { max-width: 100%; display: block; }
   .licenses-grid { grid-template-columns: 1fr; }
   .about-tab-btn { padding: 8px 14px; font-size: .82rem; }
 }
+
+/* ═════════════════════════════════════════════════════════════
+   모바일 최적화 (홈페이지) — 데스크톱에는 영향 없음
+   ═════════════════════════════════════════════════════════════ */
+.nav-burger { display: none; }
+.nav-mobile { display: none; }   /* 모바일 메뉴 패널: 데스크톱에서는 숨김 (≤680px 에서만 햄버거로 열림) */
+
+@media (max-width: 680px) {
+  html { scroll-padding-top: calc(var(--nav-h) + 8px); }
+  body { word-break: keep-all; overflow-wrap: break-word; -webkit-text-size-adjust: 100%; }  /* 한글 단어 중간 끊김 방지 */
+
+  /* 상단 메뉴: 모바일에는 메뉴가 없었음 → 햄버거 메뉴 추가 (index.html 하단 스크립트가 생성) */
+  .nav-inner { padding: 0 14px; gap: 6px; }
+  .nav-logo { margin-right: auto; }
+  .nav-cta { padding: 10px 16px; min-height: 44px; }
+  .nav-burger {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 44px; height: 44px; margin-left: 2px; border: 0; border-radius: 12px;
+    background: transparent; color: #fff; font-size: 1.6rem; line-height: 1; cursor: pointer;
+  }
+  .nav.scrolled .nav-burger, .nav.menu-open .nav-burger { color: var(--text); }
+  .nav.menu-open { background: #fff; box-shadow: 0 2px 20px rgba(14,30,66,.09); }
+  .nav.menu-open .nav-logo-img { filter: none; }
+  .nav-mobile {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    background: #fff; border-top: 1px solid var(--line);
+    box-shadow: 0 14px 30px rgba(14,30,66,.14);
+    padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
+    max-height: calc(100vh - var(--nav-h)); overflow-y: auto;
+  }
+  .nav.menu-open .nav-mobile { display: block; }
+  .nav-mobile a {
+    display: block; padding: 16px 22px; font-weight: 700; font-size: 1rem;
+    color: var(--text); border-bottom: 1px solid var(--line);
+  }
+  .nav-mobile a:last-child { border-bottom: 0; }
+  .nav-mobile a:active { background: var(--brand-light); color: var(--brand); }
+
+  /* 히어로: 견적 버튼 3개 + 사례 버튼 폭 통일, 주소창 높이 변화 대응 */
+  .hero { min-height: 100vh; min-height: 100svh; padding-left: 20px; padding-right: 20px; }
+  .hero-est-btn, .hero-btn-primary, .hero-btn-ghost {
+    width: 100%; max-width: 320px; box-sizing: border-box; justify-content: center; min-height: 52px;
+  }
+
+  /* 작은 글씨 / 작은 터치 영역 보강 */
+  .chip { font-size: .78rem; }
+  .info-card-toggle { min-height: 44px; padding-left: 14px; padding-right: 14px; }
+  .slider-dots { gap: 12px; }
+  .slider-dot { position: relative; }
+  .slider-dot::after { content: ''; position: absolute; inset: -18px -5px; }   /* 점은 작게 두고 눌리는 영역만 확대 */
+  .slider-nav-btn { width: 48px; height: 48px; }
+  .stat { padding: 12px 16px; min-width: 120px; }
+  .modal-close-btn { min-width: 44px; min-height: 44px; }
+}

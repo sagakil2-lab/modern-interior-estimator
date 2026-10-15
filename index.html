@@ -269,5 +269,33 @@
   });
   document.addEventListener('click', () => _navWrap.classList.remove('open'));
 </script>
+
+<script>
+/* 모바일 햄버거 메뉴: 데스크톱 메뉴(.nav-links) 항목을 그대로 복사해서 사용 */
+(function () {
+  var nav = document.querySelector('.nav'), links = document.querySelector('.nav-links');
+  if (!nav || !links) return;
+  var inner = nav.querySelector('.nav-inner');
+  var btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'nav-burger';
+  btn.setAttribute('aria-label', '메뉴 열기'); btn.setAttribute('aria-expanded', 'false'); btn.textContent = '☰';
+  var panel = document.createElement('nav');
+  panel.className = 'nav-mobile'; panel.setAttribute('aria-label', '모바일 메뉴');
+  links.querySelectorAll('a').forEach(function (a) {
+    var c = document.createElement('a'); c.href = a.getAttribute('href'); c.textContent = a.textContent; panel.appendChild(c);
+  });
+  inner.appendChild(btn); nav.appendChild(panel);
+  function setOpen(open) {
+    nav.classList.toggle('menu-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
+    btn.textContent = open ? '✕' : '☰';
+  }
+  btn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(!nav.classList.contains('menu-open')); });
+  panel.addEventListener('click', function (e) { if (e.target.tagName === 'A') setOpen(false); });
+  document.addEventListener('click', function (e) { if (!nav.contains(e.target)) setOpen(false); });
+  window.addEventListener('resize', function () { if (window.innerWidth > 680) setOpen(false); });
+})();
+</script>
 </body>
 </html>
