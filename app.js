@@ -2101,7 +2101,14 @@ function openInquiryModal() {
       <tr><th>총 견적액</th><td><strong style="color:var(--brand)">${formatWon(project.grand)}</strong></td></tr>
     </table>
     ${!hasCustomer ? '<p style="color:#b45309;font-size:.87rem;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:12px">고객 정보(이름·연락처)가 없으면 담당자가 연락하기 어렵습니다. STEP 1에서 입력 후 접수해 주세요.</p>' : ''}
-    <p style="font-size:.85rem;color:var(--muted);line-height:1.7">• 접수 내용은 관리자 페이지에 저장됩니다.<br>• 영업일 1~2일 내 연락드립니다.</p>`;
+    <label style="display:block;font-size:.85rem;font-weight:700;margin-bottom:6px">요청사항 · 통화 가능 시간 (선택)</label>
+    <textarea id="inquiryMemo" rows="3" maxlength="500" placeholder="예) 평일 저녁 7시 이후 통화 가능, 현장 방문은 주말 선호" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:.9rem;margin-bottom:12px"></textarea>
+    <label style="display:flex;gap:8px;align-items:flex-start;font-size:.82rem;line-height:1.6;margin-bottom:10px;cursor:pointer">
+      <input type="checkbox" id="inquiryConsent" style="margin-top:4px">
+      <span><strong>[필수] 개인정보 수집·이용 동의</strong><br>항목: 이름, 연락처, 주소, 견적 내용 / 목적: 욕실 시공 상담 및 견적 연락 / 보유기간: 상담 종료 후 1년(요청 시 즉시 삭제)</span>
+    </label>
+    <p id="inquiryError" style="display:none;color:#b91c1c;font-size:.85rem;line-height:1.6;margin:0 0 8px"></p>
+    <p style="font-size:.85rem;color:var(--muted);line-height:1.7">• 접수 내용은 담당자에게 바로 전달됩니다.<br>• 영업일 1~2일 내 연락드립니다.</p>`;
   document.getElementById('inquiryModal').classList.remove('hidden');
 }
 
@@ -2109,7 +2116,24 @@ function closeInquiryModal() {
   document.getElementById('inquiryModal').classList.add('hidden');
 }
 
-function submitInquiry() {
+function showInquiryError(msg) {
+  const box = document.getElementById('inquiryError');
+  if (!box) { alert(msg); return; }
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+
+async function submitInquiry() {
+  const info0 = state.info;
+  const phoneDigits = String(info0.customerPhone || '').replace(/\D/g, '');
+  if (!String(info0.customerName || '').trim() || phoneDigits.length < 9 || phoneDigits.length > 11) {
+    showInquiryError('STEP 1에서 이름과 연락처(숫자 9~11자리)를 정확히 입력한 뒤 접수해 주세요.');
+    return;
+  }
+  if (!document.getElementById('inquiryConsent')?.checked) {
+    showInquiryError('개인정보 수집·이용에 동의해 주세요.');
+    return;
+  }
   const project = getProjectTotals();
   const bathroomData = state.bathrooms.map((b, i) => {
     const t = getBathroomTotals(i);
@@ -2138,6 +2162,26 @@ function submitInquiry() {
     project: { materialTotal: project.materialTotal, workTotal: project.workTotal, luxury: project.luxury, reserve: project.reserve, extraTileTotal: project.extraTileTotal, extraTileItems: project.extraTileItems, grand: project.grand },
     bathrooms: bathroomData
   };
+  const memo = (document.getElementById('inquiryMemo')?.value || '').trim();
+  inquiry.memo = memo;
+
+  const submitBtn = document.getElementById('inquiryModalSubmit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '전송 중...';
+  const result = await window.sendInquiryToAdmin(inquiry, memo);
+  submitBtn.disabled = false;
+  submitBtn.textContent = '문의 접수하기';
+
+  if (!result.ok) {
+    const msg = result.error === 'not-configured'
+      ? '전송 설정이 완료되지 않았습니다. 전화 또는 카카오톡으로 문의해 주세요.'
+      : '전송에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요. 계속 안 되면 전화 또는 카카오톡으로 문의해 주세요.';
+    showInquiryError(msg);
+    return;
+  }
+
+  // 전송 성공 → 기록용 사본만 로컬에 보관
+  inquiry.status = 'sent';
   const list = loadInquiries();
   list.unshift(inquiry);
   localStorage.setItem(INQUIRY_KEY, JSON.stringify(list));
