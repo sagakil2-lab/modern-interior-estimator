@@ -24,12 +24,15 @@
       <li><a href="#inquiries" class="nav-link">견적 현황</a></li>
     </ul>
     <div class="nav-cta-wrap" id="navCtaWrap">
+      <!-- [보류] 상가·종합인테리어 견적을 다시 열 때: 아래 '드롭다운 버전' 주석을 풀고, 바로 아래 링크(<a class="nav-cta" ...>) 한 줄을 지우세요.
       <button class="nav-cta" id="navCtaBtn">견적 시작하기 ▾</button>
       <div class="nav-cta-menu">
         <a href="./bathroom.html" class="nav-cta-item">🛁 욕실 견적</a>
         <a href="./commercial.html" class="nav-cta-item">🏪 상가 견적</a>
         <a href="./interior.html" class="nav-cta-item">🏠 종합인테리어</a>
       </div>
+      -->
+      <a class="nav-cta" id="navCtaBtn" href="./bathroom.html">견적 시작하기</a>
     </div>
   </div>
 </nav>
@@ -44,8 +47,10 @@
     <p class="hero-sub">15년의 시공 노하우 · 합리적인 가격 · 1년 AS 보장</p>
     <div class="hero-btns">
       <a href="./bathroom.html" class="hero-est-btn">🛁 욕실 견적</a>
+      <!-- [보류] 상가·종합인테리어 견적 (다시 열 때 주석 해제)
       <a href="./commercial.html" class="hero-est-btn">🏪 상가 견적</a>
       <a href="./interior.html" class="hero-est-btn">🏠 종합인테리어</a>
+      -->
     </div>
     <div class="hero-btns" style="margin-top:14px">
       <a href="#cases" class="hero-btn-ghost">시공 사례 보기 ↓</a>
@@ -280,11 +285,13 @@
   // nav dropdown toggle (mobile click)
   const _navBtn = document.getElementById('navCtaBtn');
   const _navWrap = document.getElementById('navCtaWrap');
-  _navBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    _navWrap.classList.toggle('open');
-  });
-  document.addEventListener('click', () => _navWrap.classList.remove('open'));
+  if (_navBtn && _navWrap && _navWrap.querySelector('.nav-cta-menu')) {   // 드롭다운 버전일 때만 동작
+    _navBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      _navWrap.classList.toggle('open');
+    });
+    document.addEventListener('click', () => _navWrap.classList.remove('open'));
+  }
 </script>
 
 <script>
