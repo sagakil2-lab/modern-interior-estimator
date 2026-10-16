@@ -503,17 +503,43 @@ const _CAT_FOLDERS  = {
   '샤워수전': ['샤워수전', '수전'],
   '씽크수전': ['씽크수전', '수전'],
 };
-// 연속 실패 횟수 — 5회 연속 실패 시 정적 이미지 시도 중단
+// 연속 실패 횟수 — 목록(product-images-data.js)이 없을 때만 쓰는 추측 방식의 404 소음 방지용
 let _staticImgFailStreak = 0;
-const _STATIC_IMG_MAX_FAIL = 5;
+const _STATIC_IMG_MAX_FAIL = 12;
+
+// 경로의 각 구간을 URL 안전하게 변환 (공백·한글·#·% 등이 들어간 파일명 대응)
+function _encPath(p) { return String(p).replace(/^\.\//, '').split('/').map(encodeURIComponent).join('/'); }
+
+// 배포 사이트용: images/products 폴더의 실제 파일 목록(product-images-data.js)에서 경로를 찾음.
+// 파일 확장자(png/jpg/webp), 대소문자, 폴더 구조가 달라도 실제 파일명을 그대로 사용하므로 안전함.
+function _manifestImgPath(p) {
+  const M = window._PRODUCT_IMAGES;
+  if (!M) return null;
+  const brand = String(_BRAND_FOLDER[p.brand] || p.brand || '').toLowerCase();
+  const model = String(p.model || '').toLowerCase();
+  const id    = String(p.id || '').toLowerCase();
+  return M[brand + '/' + model] || M['*/' + model] || M['*/' + id] || null;
+}
+
+// 3D 모델(.glb) 파일도 같은 목록(window._PRODUCT_GLBS)에서 찾음
+function _manifestGlbPath(p) {
+  const M = window._PRODUCT_GLBS;
+  if (!M) return null;
+  const brand = String(_BRAND_FOLDER[p.brand] || p.brand || '').toLowerCase();
+  const model = String(p.model || '').toLowerCase();
+  const id    = String(p.id || '').toLowerCase();
+  return M[brand + '/' + model] || M['*/' + model] || M['*/' + id] || null;
+}
 
 function _staticImgCandidates(p) {
   const brand = _BRAND_FOLDER[p.brand] || p.brand;
   const cat   = (_CAT_FOLDERS[p.category] || [p.category])[0];
-  // 가장 가능성 높은 경로 2개만 시도 (404 노이즈 최소화)
+  // 목록 파일이 없을 때의 추측 경로 (jpg·png 모두 시도)
   return [
     `images/products/${brand}/${cat}/${p.model}.jpg`,
+    `images/products/${brand}/${cat}/${p.model}.png`,
     `images/products/${brand}/${p.model}.jpg`,
+    `images/products/${brand}/${p.model}.png`,
   ];
 }
 function _staticGlbCandidates(p) {
@@ -1242,6 +1268,15 @@ function renderCatalog() {
       cardImgWrap.appendChild(img);
     };
     const tryFileImg = () => {
+      const listed = _manifestImgPath(item);
+      if (listed) {
+        const img = document.createElement('img');
+        img.alt = item.name;
+        img.src = './' + _encPath(listed);
+        img.onload = () => { cardImgWrap.classList.remove('hidden'); cardImgWrap.innerHTML = ''; cardImgWrap.appendChild(img); };
+        return;
+      }
+      if (window._PRODUCT_IMAGES) return;   // 파일 목록이 있는데 이 제품 사진이 없으면 추측하지 않음(404 방지)
       if (_staticImgFailStreak >= _STATIC_IMG_MAX_FAIL) return; // 연속 실패 시 중단
       const paths = _staticImgCandidates(item);
       let i = 0;
@@ -1555,7 +1590,8 @@ function openModel3dModal(item) {
   const viewer = document.getElementById('model3dViewer');
   viewer.src = '';
   if (_model3dObjectUrl) { URL.revokeObjectURL(_model3dObjectUrl); _model3dObjectUrl = null; }
-  const glbPaths = _staticGlbCandidates(item);
+  const listedGlb = _manifestGlbPath(item);
+  const glbPaths = listedGlb ? ['./' + _encPath(listedGlb)] : _staticGlbCandidates(item);
   const loadViewer = src => {
     viewer.src = src;
     viewer.addEventListener('load', () => {
@@ -1670,7 +1706,8 @@ function openProductDetailModal(item) {
   const tryDetailFileImg = () => {
     const img = document.createElement('img');
     img.alt = item.name;
-    img.src = `./images/products/${item.id}.jpg`;
+    const listed = _manifestImgPath(item);
+    img.src = listed ? './' + _encPath(listed) : `./images/products/${item.id}.jpg`;
     img.onload = () => { imgSection.textContent = ''; imgSection.appendChild(img); };
   };
   if (window.ImageDB) {
@@ -2310,20 +2347,13 @@ document.addEventListener('keydown', e => {
 });
 
 if (window.Model3DDB) {
-  Model3DDB.getAllKeys().then(async keys => {
+  Model3DDB.getAllKeys().then(keys => {
     model3dIds = new Set(keys);
-    await Promise.all(
-      catalog
-        .filter(p => !model3dIds.has(p.id) && p.brand && p.category && p.model)
-        .map(p => (async () => {
-          for (const url of _staticGlbCandidates(p)) {
-            try {
-              const r = await fetch(url, { method: 'HEAD' });
-              if (r.ok) { model3dIds.add(p.id); return; }
-            } catch {}
-          }
-        })())
-    );
+    // 배포 사이트: 파일 목록(product-images-data.js)으로 3D 모델이 있는 제품을 판별한다.
+    // (예전에는 페이지를 열 때마다 제품 수백 개 × 경로 여러 개로 HEAD 요청을 보내서 GitHub Pages 요청 제한에 걸렸음)
+    if (window._PRODUCT_GLBS) {
+      catalog.forEach(p => { if (!model3dIds.has(p.id) && _manifestGlbPath(p)) model3dIds.add(p.id); });
+    }
     renderCatalog();
   }).catch(() => {});
 }

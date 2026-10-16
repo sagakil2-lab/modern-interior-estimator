@@ -268,12 +268,12 @@ const ABOUT_DATA = {
     },
   ],
   location: {
-    address: '서울시 강남구 테헤란로 123 (삼성동)',
-    tel: '010-0000-0000',
-    email: 'info@modern-interior.kr',
-    kakao: '@모던인테리어',
+    address: '인천 남동구 능허대로559번길 27 3층, 더모던 인테리어',
+    tel: '010-9544-2206',
+    email: 'sagakil2@naver.com',
+    kakao: '@sagakil2',
     hours: '평일 09:00 – 18:00 · 토요일 10:00 – 15:00',
-    parking: '건물 내 주차 가능 (1시간 무료)',
+    parking: '주변 주차',
   },
   teams: [],
 };
