@@ -1147,10 +1147,7 @@ img { max-width: 100%; display: block; }
 
 /* ── 시공 전·후 사례 ── */
 .chip-ba { background: #fff4e5; color: #b45309; }
-/* 카드 썸네일: 시공 전(왼쪽) / 시공 후(오른쪽) 나란히 */
-.ba-split { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #fff; }
-.ba-half { position: relative; margin: 0; overflow: hidden; }
-.ba-half img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* 카드 썸네일: 시공 후 사진 한 장 + 'BEFORE/AFTER' 표시 (전/후 비교는 카드를 눌렀을 때 팝업에서) */
 .ba-tag { position: absolute; left: 8px; bottom: 8px; font-size: .72rem; font-weight: 800; color: #fff; padding: 3px 10px; border-radius: 999px; line-height: 1.5; }
 .ba-tag-before { background: rgba(30,41,59,.85); }
 .ba-tag-after  { background: rgba(19,87,197,.95); }

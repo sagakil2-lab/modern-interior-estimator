@@ -49,12 +49,6 @@ function caseChipsHtml(c) {
     ${c.apt_size ? `<span class="chip chip-size">${c.apt_size}평</span>` : ''}
     ${caseBA(c) ? '<span class="chip chip-ba">시공 전·후</span>' : ''}`;
 }
-function caseBASplitHtml(c, ba) {
-  return `<div class="ba-split">
-    <figure class="ba-half"><img src="${ba.before}" alt="${c.title} 시공 전" loading="lazy" decoding="async" /><figcaption class="ba-tag ba-tag-before">시공 전</figcaption></figure>
-    <figure class="ba-half"><img src="${ba.after}" alt="${c.title} 시공 후" loading="lazy" decoding="async" /><figcaption class="ba-tag ba-tag-after">시공 후</figcaption></figure>
-  </div>`;
-}
 
 // ─────────────────────────────────────────────
 //  욕실 리모델링 정보 탭
@@ -662,10 +656,8 @@ function renderCards() {
     const ba       = caseBA(c);
     const photoUrl = caseMainPhoto(c);
     const metaParts = [c.duration ? `시공 ${c.duration}일` : '', c.date ? c.date.slice(0, 7) : ''].filter(Boolean);
-    const thumbContent = (ba && !casePhotoMap[c.id])
-      ? caseBASplitHtml(c, ba)
-      : photoUrl
-      ? `<img src="${photoUrl}" alt="${c.title}" class="thumb-img" loading="lazy" decoding="async" />`
+    const thumbContent = photoUrl
+      ? `<img src="${photoUrl}" alt="${c.title}${ba ? ' 시공 후' : ''}" class="thumb-img" loading="lazy" decoding="async" />${ba ? '<span class="ba-tag ba-tag-after">시공 후</span>' : ''}`
       : `<div class="thumb-placeholder"><span class="thumb-icon">🚿</span><span class="thumb-concept">${c.concept}</span></div>`;
     return `
       <article class="case-card" data-id="${c.id}" tabindex="0" role="button" aria-label="${c.title} 자세히 보기">
