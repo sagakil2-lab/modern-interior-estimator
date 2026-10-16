@@ -126,14 +126,15 @@ window._DEFAULT_ABOUT_DATA = {
     ],
   },
   licenses: [
-    { name: '건설업 면허', subtitle: '실내건축공사업', issuer: '국토교통부', year: 2010, icon: '🏗️' },
-    { name: '실내건축기능사', subtitle: '실내건축 전문', issuer: '한국산업인력공단', year: 2008, icon: '🪟' },
-    { name: '방수기능사', subtitle: '방수공사 전문', issuer: '한국산업인력공단', year: 2009, icon: '💧' },
     { name: '타일기능사', subtitle: '타일 시공 전문', issuer: '한국산업인력공단', year: 2007, icon: '🧱' },
-    { name: '위생설비기능사', subtitle: '배관·위생설비', issuer: '한국산업인력공단', year: 2010, icon: '🚿' },
-    { name: '도배기능사', subtitle: '도배 시공 전문', issuer: '한국산업인력공단', year: 2011, icon: '🖼️' },
   ],
   partners: [
+    {
+      category: '함께하는 협력업체',
+      items: [
+        { name: '센스아트 인테리어', desc: '함께하는 협력업체입니다. 블로그에서 더 많은 소식을 확인해 보세요.', logo: '🤝', url: 'https://blog.naver.com/sense_art_1', linkText: '네이버 블로그' },
+      ],
+    },
     {
       category: '위생도기',
       items: [
