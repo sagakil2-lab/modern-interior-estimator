@@ -5,7 +5,7 @@
  *
  * 설정: 아래 ADMIN_EMAIL 만 바꾸세요.
  */
-const ADMIN_EMAIL = 'sagakil2@naver.com';   // 알림 받을 이메일
+const ADMIN_EMAIL = 'your-email@example.com';   // 알림 받을 이메일
 const TELEGRAM_BOT_TOKEN = '';                  // (선택) 텔레그램 봇 토큰 — 폰 즉시 알림용
 const TELEGRAM_CHAT_ID = '';                    // (선택) 텔레그램 채팅 ID
 
