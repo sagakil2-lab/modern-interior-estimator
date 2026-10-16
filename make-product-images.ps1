@@ -10,6 +10,7 @@ $imgs  = @($all | Where-Object { $_.Extension -match '^\.(png|jpe?g|webp|gif)$' 
 $glbs  = @($all | Where-Object { $_.Extension -ieq '.glb' })
 function Build-Map($list) {
     $map = [ordered]@{}
+    # 1차: 파일명 그대로 (브랜드폴더/파일명, */파일명)
     foreach ($f in $list) {
         $rel   = $f.FullName.Substring($root.Length).TrimStart('\') -replace '\\', '/'
         $parts = $rel.Split('/')
@@ -17,6 +18,22 @@ function Build-Map($list) {
         $path  = './images/products/' + $rel
         if ($parts.Length -ge 2) { $map[($parts[0].ToLower() + '/' + $base)] = $path }
         $map[('*/' + $base)] = $path
+    }
+    # 2차: 'VELO 일체형세면기', 'HCL-5505 (골드)' 처럼 뒤에 설명이 붙은 파일명은 앞의 형번만으로도 연결 (1차에서 이미 있는 이름은 건드리지 않음)
+    foreach ($f in $list) {
+        $rel   = $f.FullName.Substring($root.Length).TrimStart('\') -replace '\\', '/'
+        $parts = $rel.Split('/')
+        $base  = [IO.Path]::GetFileNameWithoutExtension($f.Name).ToLower()
+        $path  = './images/products/' + $rel
+        $tok   = ($base -split '[\s\(\[]')[0]
+        if ($tok -and ($tok -ne $base)) {
+            $kAll = '*/' + $tok
+            if (-not $map.Contains($kAll)) { $map[$kAll] = $path }
+            if ($parts.Length -ge 2) {
+                $kBr = $parts[0].ToLower() + '/' + $tok
+                if (-not $map.Contains($kBr)) { $map[$kBr] = $path }
+            }
+        }
     }
     return $map
 }

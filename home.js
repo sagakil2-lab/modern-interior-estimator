@@ -4,9 +4,24 @@
 //  콘텐츠 사진 맵 (localStorage)
 // ─────────────────────────────────────────────
 const contentPhotoMap = (() => {
-  try { return JSON.parse(localStorage.getItem('bathroom_content_photos') || '{}'); }
-  catch { return {}; }
+  // 기본값: content-photos-data.js (images/content 폴더 연결, 모든 방문자 공통)
+  // 관리자가 이 브라우저에서 따로 지정한 값(localStorage)이 있으면 그것이 우선
+  let local = {};
+  try { local = JSON.parse(localStorage.getItem('bathroom_content_photos') || '{}'); }
+  catch { local = {}; }
+  return Object.assign({}, window._CONTENT_PHOTOS || {}, local);
 })();
+
+// 정보 카드 사진: 카드에 photoKey 가 지정돼 있으면 그것을, 없으면 '탭ID|카드제목' 기본 연결을 사용
+function infoCardPhoto(tab, card) {
+  if (card.photoKey && contentPhotoMap[card.photoKey]) return contentPhotoMap[card.photoKey];
+  return (window._INFO_CARD_PHOTOS || {})[tab.id + '|' + card.title] || null;
+}
+function infoCardImgHtml(photo, title) {
+  return photo
+    ? `<img src="${photo}" alt="${title}" class="info-card-img" loading="lazy" decoding="async" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:12px;cursor:zoom-in" />`
+    : '';
+}
 
 // ─────────────────────────────────────────────
 //  시공 사례 데이터 — cases-default-data.js 에서 로드
@@ -168,18 +183,18 @@ function renderInfoSection() {
         ).join('');
         return `<div class="info-card${card.tip ? ' tip-card' : ''}">
           <h3 class="info-card-title">${card.title}</h3>
-          <div class="info-card-content"><div class="info-compare">${compHtml}</div></div>
+          <div class="info-card-content">${infoCardImgHtml(infoCardPhoto(tab, card), card.title)}<div class="info-compare">${compHtml}</div></div>
           <button class="info-card-toggle"><span class="itoggle-label">열기</span><span class="itoggle-arrow">▾</span></button>
         </div>`;
       }
       const content = card.list
         ? `<ul class="info-card-list">${card.list.map(li => `<li>${li}</li>`).join('')}</ul>`
         : `<p class="info-card-body">${card.body}</p>`;
-      const cardPhoto = card.photoKey ? contentPhotoMap[card.photoKey] : null;
+      const cardPhoto = infoCardPhoto(tab, card);
       return `<div class="info-card${card.tip ? ' tip-card' : ''}">
         <h3 class="info-card-title">${card.title}</h3>
         <div class="info-card-content">
-          ${cardPhoto ? `<img src="${cardPhoto}" alt="${card.title}" class="info-card-img" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:12px;cursor:zoom-in" />` : ''}
+          ${infoCardImgHtml(cardPhoto, card.title)}
           ${content}
         </div>
         <button class="info-card-toggle"><span class="itoggle-label">열기</span><span class="itoggle-arrow">▾</span></button>
@@ -268,12 +283,12 @@ const ABOUT_DATA = {
     },
   ],
   location: {
-    address: '인천 남동구 능허대로559번길 27 3층, 더모던 인테리어',
-    tel: '010-9544-2206',
-    email: 'sagakil2@naver.com',
-    kakao: '@sagakil2',
+    address: '서울시 강남구 테헤란로 123 (삼성동)',
+    tel: '010-0000-0000',
+    email: 'info@modern-interior.kr',
+    kakao: '@모던인테리어',
     hours: '평일 09:00 – 18:00 · 토요일 10:00 – 15:00',
-    parking: '주변 주차',
+    parking: '건물 내 주차 가능 (1시간 무료)',
   },
   teams: [],
 };
@@ -345,9 +360,9 @@ function renderOverviewPanel() {
   if (!photoSrcs.length && contentPhotoMap['about_overview']) photoSrcs.push(contentPhotoMap['about_overview']);
   let photoHtml = '';
   if (photoSrcs.length === 1) {
-    photoHtml = `<img src="${photoSrcs[0]}" alt="${d.name}" data-lb-idx="0" class="about-photo-thumb" style="width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 16px rgba(0,0,0,.1);cursor:pointer" />`;
+    photoHtml = `<img loading="lazy" decoding="async" src="${photoSrcs[0]}" alt="${d.name}" data-lb-idx="0" class="about-photo-thumb" style="width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 16px rgba(0,0,0,.1);cursor:pointer" />`;
   } else if (photoSrcs.length > 1) {
-    photoHtml = `<div class="about-photo-grid">${photoSrcs.map((src, i) => `<img src="${src}" alt="${d.name}" class="about-photo-thumb" data-lb-idx="${i}" />`).join('')}</div>`;
+    photoHtml = `<div class="about-photo-grid">${photoSrcs.map((src, i) => `<img loading="lazy" decoding="async" src="${src}" alt="${d.name}" class="about-photo-thumb" data-lb-idx="${i}" />`).join('')}</div>`;
   }
   return `
     <div class="overview-intro">
@@ -471,7 +486,7 @@ function renderSlider() {
     const total = Object.values(c.costs).reduce((a, v) => a + v, 0);
     const photoUrl = casePhotoMap[c.id] || casePhotoMap[`${c.id}-1`] || (c.photos && c.photos[0]) || null;
     const thumbContent = photoUrl
-      ? `<img class="slider-photo" src="${photoUrl}" alt="${c.title}" />`
+      ? `<img class="slider-photo" loading="lazy" decoding="async" src="${photoUrl}" alt="${c.title}" />`
       : '';
     return `<div class="slider-card" data-id="${c.id}">
       <div class="slider-thumb-area" style="background:${c.thumbBg}">
@@ -623,7 +638,7 @@ function renderCards() {
     const total    = Object.values(c.costs).reduce((a, v) => a + v, 0);
     const photoUrl = casePhotoMap[c.id] || casePhotoMap[`${c.id}-1`] || (c.photos && c.photos[0]) || null;
     const thumbContent = photoUrl
-      ? `<img src="${photoUrl}" alt="${c.title}" class="thumb-img" />`
+      ? `<img src="${photoUrl}" alt="${c.title}" class="thumb-img" loading="lazy" decoding="async" />`
       : `<div class="thumb-placeholder"><span class="thumb-icon">🚿</span><span class="thumb-concept">${c.concept}</span></div>`;
     return `
       <article class="case-card" data-id="${c.id}" tabindex="0" role="button" aria-label="${c.title} 자세히 보기">
@@ -812,7 +827,7 @@ function openModal(id) {
         </div>
         ${allPhotos.length > 1 ? `
         <div class="gallery-thumbs">
-          ${allPhotos.map((p, i) => `<img class="gallery-thumb${i === 0 ? ' active' : ''}" src="${p}" alt="썸네일 ${i + 1}" data-idx="${i}" />`).join('')}
+          ${allPhotos.map((p, i) => `<img class="gallery-thumb${i === 0 ? ' active' : ''}" loading="lazy" decoding="async" src="${p}" alt="썸네일 ${i + 1}" data-idx="${i}" />`).join('')}
         </div>` : ''}
       </div>`
     : `<div class="gallery-placeholder">
