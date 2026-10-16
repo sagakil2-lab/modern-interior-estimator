@@ -1042,92 +1042,143 @@ function _chatBubble(role, text, ts) {
 }
 
 function initChatWidget() {
-  const WELCOME  = '안녕하세요! 모던인테리어입니다. 욕실 리모델링에 관해 궁금하신 점을 편하게 남겨주세요. 담당자가 확인 후 빠르게 연락드리겠습니다. 😊';
-  const AUTOREPLY = '메시지를 받았습니다. 담당자가 확인 후 빠른 시일 내 연락드리겠습니다.\n(평일 09:00 – 18:00 운영)';
+  // 상담 문의 접수 폼: 고객이 연락처와 문의를 남기면 관리자 이메일로 전달됩니다.
+  // (예전 '실시간 채팅'은 메시지가 고객 브라우저에만 저장돼 관리자에게 전달되지 않았습니다)
+  const CONSENT = '<strong>[필수] 개인정보 수집·이용 동의</strong><br>항목: 이름(선택), 연락처, 문의 내용 / 목적: 상담 문의 응대 / 보유기간: 상담 종료 후 1년(요청 시 즉시 삭제)';
+
+  // 사이트 하단 연락처에서 전화번호·운영시간을 읽어 안내에 사용 (한 곳에서만 관리)
+  function contactInfo() {
+    const box = document.querySelector('.footer-contact');
+    const m = ((box && box.textContent) || '').match(/0\d{1,2}-?\d{3,4}-?\d{4}/);
+    const hours = (document.querySelector('.footer-hours') || {}).textContent;
+    return { phone: m ? m[0] : '', hours: hours ? hours.trim() : '' };
+  }
+  const ci = contactInfo();
+  const callLine = ci.phone
+    ? `급하시면 전화 주세요: <a href="tel:${ci.phone.replace(/\D/g, '')}">${ci.phone}</a>${ci.hours ? ' · ' + ci.hours : ''}`
+    : '';
 
   const win = document.createElement('div');
   win.id = 'chatWin';
-  win.className = 'chat-win hidden';
+  win.className = 'chat-win chat-form-win hidden';
+  win.setAttribute('role', 'dialog');
+  win.setAttribute('aria-label', '상담 문의');
   win.innerHTML = `
     <div class="chat-win-head">
       <div style="display:flex;align-items:center;gap:10px">
         <span style="font-size:1.5rem;line-height:1">🛁</span>
         <div>
-          <p style="margin:0;font-weight:800;font-size:.92rem;color:#fff">모던인테리어</p>
-          <p style="margin:0;font-size:.74rem;color:rgba(255,255,255,.75)">실시간 상담 문의</p>
+          <p style="margin:0;font-weight:800;font-size:.92rem;color:#fff">모던인테리어 상담 문의</p>
+          <p style="margin:0;font-size:.74rem;color:rgba(255,255,255,.75)">연락처를 남겨주시면 확인 후 연락드립니다</p>
         </div>
       </div>
-      <button class="chat-win-x" id="chatWinClose">✕</button>
+      <button type="button" class="chat-win-x" id="chatWinClose" aria-label="닫기">✕</button>
     </div>
-    <div class="chat-win-msgs" id="chatWinMsgs"></div>
-    <div class="chat-win-foot">
-      <textarea class="chat-win-input" id="chatWinInput" placeholder="문의 내용을 입력하세요…" rows="2"></textarea>
-      <button class="chat-win-send" id="chatWinSend">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-      </button>
+    <div class="cform-body">
+      <form id="cform" novalidate>
+        <label class="cform-label">이름 <span>(선택)</span>
+          <input id="cformName" type="text" maxlength="40" autocomplete="name" placeholder="예: 홍길동">
+        </label>
+        <label class="cform-label">연락처 <b>*</b>
+          <input id="cformPhone" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="010-0000-0000">
+        </label>
+        <label class="cform-label">문의 내용 <b>*</b>
+          <textarea id="cformMsg" rows="4" maxlength="1000" placeholder="예: 24평 아파트 욕실 2개 전체 리모델링 비용이 궁금합니다."></textarea>
+        </label>
+        <input id="cformWebsite" class="cform-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <label class="cform-consent"><input type="checkbox" id="cformConsent"><span>${CONSENT}</span></label>
+        <p class="cform-error" id="cformError" role="alert" hidden></p>
+        <button type="submit" class="cform-submit" id="cformSubmit">문의 접수하기</button>
+        ${callLine ? `<p class="cform-call">${callLine}</p>` : ''}
+      </form>
+      <div class="cform-done" id="cformDone" hidden>
+        <div class="cform-done-icon">✅</div>
+        <p class="cform-done-title">접수되었습니다</p>
+        <p class="cform-done-sub">남겨주신 연락처로 확인 후 연락드리겠습니다.</p>
+        <button type="button" class="cform-again" id="cformAgain">새 문의 작성</button>
+      </div>
     </div>`;
   document.body.appendChild(win);
 
-  let sid = sessionStorage.getItem('mi_chat_sid');
-  if (!sid) { sid = 'chat_' + Date.now(); sessionStorage.setItem('mi_chat_sid', sid); }
+  const $ = id => document.getElementById(id);
+  const openBtn = $('chatOpenBtn');
+  let attemptId = null;                    // 같은 접수를 재전송해도 서버가 중복으로 처리하도록 유지
 
   function openChat() {
     win.classList.remove('hidden');
-    // 메시지 목록 렌더
-    const box = document.getElementById('chatWinMsgs');
-    const sessions = _getChatSessions();
-    const sess = sessions.find(s => s.id === sid);
-    box.innerHTML = sess && sess.msgs.length
-      ? sess.msgs.map(m => _chatBubble(m.r, m.t, m.ts)).join('')
-      : _chatBubble('agent', WELCOME, _chatTs());
-    box.scrollTop = box.scrollHeight;
-    document.getElementById('chatWinInput').focus();
-    document.getElementById('chatOpenBtn').classList.add('sfb-chat-open');
+    openBtn.classList.add('sfb-chat-open');
+    setTimeout(() => { const f = $('cformName'); if (f && !$('cform').hidden) f.focus(); }, 50);
   }
   function closeChat() {
     win.classList.add('hidden');
-    document.getElementById('chatOpenBtn').classList.remove('sfb-chat-open');
+    openBtn.classList.remove('sfb-chat-open');
   }
+  function showError(msg) { const e = $('cformError'); e.textContent = msg; e.hidden = false; }
+  function clearError() { $('cformError').hidden = true; }
 
-  document.getElementById('chatWinClose').addEventListener('click', closeChat);
-  document.getElementById('chatOpenBtn').addEventListener('click', () =>
-    win.classList.contains('hidden') ? openChat() : closeChat());
+  $('chatWinClose').addEventListener('click', closeChat);
+  openBtn.addEventListener('click', () => win.classList.contains('hidden') ? openChat() : closeChat());
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !win.classList.contains('hidden')) closeChat(); });
 
-  function doSend() {
-    const inp = document.getElementById('chatWinInput');
-    const text = inp.value.trim();
-    if (!text) return;
-    inp.value = '';
-    const ts = _chatTs();
-    const box = document.getElementById('chatWinMsgs');
-    box.insertAdjacentHTML('beforeend', _chatBubble('user', text, ts));
-    box.scrollTop = box.scrollHeight;
-
-    // localStorage 저장
-    const sessions = _getChatSessions();
-    let sess = sessions.find(s => s.id === sid);
-    if (!sess) {
-      sess = { id: sid, start: new Date().toISOString(), msgs: [{ r:'agent', t:WELCOME, ts:_chatTs(new Date(Date.now()-2000)) }], unread: 0 };
-      sessions.push(sess);
+  async function send(payload) {
+    const endpoint = window.INQUIRY_ENDPOINT;   // inquiry-sender.js 에서 설정 (견적 접수와 같은 주소)
+    if (!endpoint) return { ok: false, error: 'not-configured' };
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // CORS preflight 없이 전송
+        body: JSON.stringify(Object.assign({ kind: 'chat' }, payload)),
+        signal: ctrl.signal
+      });
+      const data = await res.json();
+      return data && data.ok ? { ok: true } : { ok: false, error: (data && data.error) || 'server-error' };
+    } catch (err) {
+      return { ok: false, error: err && err.name === 'AbortError' ? 'timeout' : 'network' };
+    } finally {
+      clearTimeout(timer);
     }
-    sess.msgs.push({ r:'user', t:text, ts });
-    sess.unread = (sess.unread||0) + 1;
-    _setChatSessions(sessions);
-
-    // 자동 답변
-    setTimeout(() => {
-      const rts = _chatTs();
-      box.insertAdjacentHTML('beforeend', _chatBubble('agent', AUTOREPLY, rts));
-      box.scrollTop = box.scrollHeight;
-      const ss2 = _getChatSessions();
-      const s2 = ss2.find(s => s.id === sid);
-      if (s2) { s2.msgs.push({ r:'agent', t:AUTOREPLY, ts:rts }); _setChatSessions(ss2); }
-    }, 900);
   }
 
-  document.getElementById('chatWinSend').addEventListener('click', doSend);
-  document.getElementById('chatWinInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
+  $('cform').addEventListener('submit', async e => {
+    e.preventDefault();
+    clearError();
+    const name = $('cformName').value.trim();
+    const phone = $('cformPhone').value.trim();
+    const message = $('cformMsg').value.trim();
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 9 || digits.length > 11) { showError('연락처를 숫자 9~11자리로 정확히 입력해 주세요.'); $('cformPhone').focus(); return; }
+    if (!message) { showError('문의 내용을 입력해 주세요.'); $('cformMsg').focus(); return; }
+    if (!$('cformConsent').checked) { showError('개인정보 수집·이용에 동의해 주세요.'); return; }
+
+    if (!attemptId) attemptId = 'chat-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    const btn = $('cformSubmit');
+    btn.disabled = true; btn.textContent = '전송 중...';
+    const result = await send({ id: attemptId, name, phone, message, website: $('cformWebsite').value });
+    btn.disabled = false; btn.textContent = '문의 접수하기';
+
+    if (!result.ok) {
+      const tail = ci.phone ? ` 급하시면 ${ci.phone}로 전화 주세요.` : '';
+      showError(result.error === 'not-configured'
+        ? '상담 접수 설정이 아직 완료되지 않았습니다.' + tail
+        : result.error === 'busy'
+          ? '지금 문의가 몰려 접수가 지연되고 있습니다. 잠시 후 다시 시도해 주세요.' + tail
+          : '전송에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.' + tail);
+      return;
+    }
+    // 전송 성공 → 접수 완료 화면 (개인정보는 이 브라우저에 저장하지 않음)
+    attemptId = null;
+    $('cform').hidden = true;
+    $('cformDone').hidden = false;
+  });
+
+  $('cformAgain').addEventListener('click', () => {
+    $('cform').reset();
+    clearError();
+    $('cformDone').hidden = true;
+    $('cform').hidden = false;
+    $('cformName').focus();
   });
 }
 

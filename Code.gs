@@ -20,6 +20,7 @@ function doPost(e) {
   try {
     const payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (payload.website) return json_({ ok: true });            // 스팸 봇: 조용히 무시
+    if (payload.kind === 'chat') return handleChat_(payload);   // 홈페이지 '상담 문의' 폼
 
     const inq = payload.inquiry || {};
     const c = inq.customer || {};
@@ -63,6 +64,46 @@ function doPost(e) {
   } catch (err) {
     return json_({ ok: false, error: 'server-error' });
   }
+}
+
+/** 홈페이지 '상담 문의' 접수 → 관리자 메일 */
+function handleChat_(p) {
+  const name = String(p.name || '').trim().slice(0, 40);
+  const phone = String(p.phone || '').replace(/\D/g, '');
+  const message = String(p.message || '').trim().slice(0, 1500);
+  if (phone.length < 9 || phone.length > 11 || !message) return json_({ ok: false, error: 'invalid-input' });
+  if (!p.id) return json_({ ok: false, error: 'invalid-id' });
+
+  const cache = CacheService.getScriptCache();
+  if (cache.get('chat:' + p.id)) return json_({ ok: true, duplicate: true });   // 재전송 중복 방지
+
+  // 메일 한도 보호: 한 시간에 상담 문의 메일은 최대 30건까지
+  const hourKey = 'chat-count:' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMddHH');
+  const count = Number(cache.get(hourKey) || 0);
+  if (count >= 30) return json_({ ok: false, error: 'busy' });
+
+  const when = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+  const subject = `[상담문의] ${name || '이름 미입력'} · ${p.phone}`;
+  const body = [
+    '■ 상담 문의',
+    `이름: ${name || '-'}`,
+    `연락처: ${p.phone}`,
+    '',
+    '문의 내용:',
+    message,
+    '',
+    `접수 시각: ${when}  (접수ID: ${p.id})`
+  ].join('\n');
+
+  // 메일 발송 실패는 고객에게 '실패'로 알려야 하므로 숨기지 않음
+  try {
+    MailApp.sendEmail({ to: ADMIN_EMAIL, subject: subject, body: body, name: '상담문의 접수' });
+  } catch (mailErr) {
+    return json_({ ok: false, error: 'mail-failed' });
+  }
+  cache.put('chat:' + p.id, '1', 21600);
+  cache.put(hourKey, String(count + 1), 3600);
+  return json_({ ok: true });
 }
 
 function buildBody_(inq, c, grand, memo) {
