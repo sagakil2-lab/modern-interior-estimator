@@ -1144,3 +1144,29 @@ img { max-width: 100%; display: block; }
   .cform-label input, .cform-label textarea { font-size: 16px; }   /* iOS 포커스 확대 방지 */
   .cform-submit { min-height: 50px; }
 }
+
+/* ── 시공 전·후 사례 ── */
+.chip-ba { background: #fff4e5; color: #b45309; }
+/* 카드 썸네일: 시공 전(왼쪽) / 시공 후(오른쪽) 나란히 */
+.ba-split { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #fff; }
+.ba-half { position: relative; margin: 0; overflow: hidden; }
+.ba-half img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ba-tag { position: absolute; left: 8px; bottom: 8px; font-size: .72rem; font-weight: 800; color: #fff; padding: 3px 10px; border-radius: 999px; line-height: 1.5; }
+.ba-tag-before { background: rgba(30,41,59,.85); }
+.ba-tag-after  { background: rgba(19,87,197,.95); }
+/* 팝업: 전/후 사진 비교 */
+.ba-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ba-fig { position: relative; margin: 0; border-radius: 14px; overflow: hidden; background: #0d1117; }
+.ba-fig img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: contain; cursor: zoom-in; }
+.ba-label { position: absolute; top: 10px; left: 10px; z-index: 1; font-size: .8rem; font-weight: 800; color: #fff; padding: 4px 12px; border-radius: 999px; }
+.ba-before { background: rgba(30,41,59,.88); }
+.ba-after  { background: var(--brand); }
+.ba-hint { margin: -14px 0 0; font-size: .78rem; color: var(--muted); text-align: center; }
+.modal-cost-note { margin: 0; padding: 16px 18px; background: #f3f7ff; border: 1px solid #d6e4ff; border-radius: 12px; font-size: .9rem; line-height: 1.75; color: var(--text); }
+@media (max-width: 560px) {
+  .ba-compare { grid-template-columns: 1fr; }
+  .ba-tag { font-size: .68rem; padding: 2px 8px; left: 6px; bottom: 6px; }
+}
+/* 사례 팝업·사진 확대 보기가 열려 있을 때는 오른쪽 상담/SNS 버튼을 숨겨 사진을 가리지 않게 함 */
+body:has(#caseModal:not(.hidden)) .social-float,
+body:has(#aboutLightbox:not(.hidden)) .social-float { display: none; }

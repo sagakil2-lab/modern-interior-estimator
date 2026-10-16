@@ -29,6 +29,33 @@ function infoCardImgHtml(photo, title) {
 // ─────────────────────────────────────────────
 let CASES = JSON.parse(JSON.stringify(window._DEFAULT_CASES_DATA || []));
 
+// ── 비용·자재·날짜가 없는 사례(시공 전/후 사진만 있는 사례)도 표시하기 위한 헬퍼 ──
+function caseTotal(c) { return c.costs ? Object.values(c.costs).reduce((a, v) => a + (Number(v) || 0), 0) : 0; }
+// 시공 전/후 사진: photos 와 photoLabels(['시공 전','시공 후']) 가 짝으로 있으면 전/후 비교 사례
+function caseBA(c) {
+  const ph = c.photos || [], lb = c.photoLabels || [];
+  if (ph.length < 2 || lb.length !== ph.length) return null;
+  const bi = lb.findIndex(l => String(l).includes('전')), ai = lb.findIndex(l => String(l).includes('후'));
+  if (bi < 0 || ai < 0 || bi === ai) return null;
+  return { before: ph[bi], after: ph[ai] };
+}
+function caseMainPhoto(c) {
+  const ba = caseBA(c);
+  return casePhotoMap[c.id] || casePhotoMap[`${c.id}-1`] || (ba ? ba.after : (c.photos && c.photos[0])) || null;
+}
+function caseChipsHtml(c) {
+  return `<span class="chip chip-region">${c.region} · ${c.district}</span>
+    <span class="chip chip-loc">${c.location}</span>
+    ${c.apt_size ? `<span class="chip chip-size">${c.apt_size}평</span>` : ''}
+    ${caseBA(c) ? '<span class="chip chip-ba">시공 전·후</span>' : ''}`;
+}
+function caseBASplitHtml(c, ba) {
+  return `<div class="ba-split">
+    <figure class="ba-half"><img src="${ba.before}" alt="${c.title} 시공 전" loading="lazy" decoding="async" /><figcaption class="ba-tag ba-tag-before">시공 전</figcaption></figure>
+    <figure class="ba-half"><img src="${ba.after}" alt="${c.title} 시공 후" loading="lazy" decoding="async" /><figcaption class="ba-tag ba-tag-after">시공 후</figcaption></figure>
+  </div>`;
+}
+
 // ─────────────────────────────────────────────
 //  욕실 리모델링 정보 탭
 // ─────────────────────────────────────────────
@@ -483,26 +510,22 @@ function renderSlider() {
   if (!track || !dots) return;
 
   track.innerHTML = FEATURED.map(c => {
-    const total = Object.values(c.costs).reduce((a, v) => a + v, 0);
-    const photoUrl = casePhotoMap[c.id] || casePhotoMap[`${c.id}-1`] || (c.photos && c.photos[0]) || null;
+    const total = caseTotal(c);
+    const photoUrl = caseMainPhoto(c);
     const thumbContent = photoUrl
       ? `<img class="slider-photo" loading="lazy" decoding="async" src="${photoUrl}" alt="${c.title}" />`
       : '';
     return `<div class="slider-card" data-id="${c.id}">
       <div class="slider-thumb-area" style="background:${c.thumbBg}">
         ${thumbContent}
-        <span class="slider-concept-badge">${c.concept}</span>
+        ${c.concept ? `<span class="slider-concept-badge">${c.concept}</span>` : ''}
       </div>
       <div class="slider-body">
-        <div class="case-chips">
-          <span class="chip chip-region">${c.region} · ${c.district}</span>
-          <span class="chip chip-loc">${c.location}</span>
-          <span class="chip chip-size">${c.apt_size}평</span>
-        </div>
+        <div class="case-chips">${caseChipsHtml(c)}</div>
         <h3>${c.title}</h3>
         <p class="slider-desc">${c.desc}</p>
         <div class="slider-info-row">
-          <span class="slider-total">총 ${formatWon(total)}</span>
+          <span class="slider-total">${total ? `총 ${formatWon(total)}` : '시공 전·후 보기'}</span>
           <span class="slider-detail-link">자세히 보기 →</span>
         </div>
       </div>
@@ -635,25 +658,25 @@ function renderCards() {
     : `총 ${filtered.length}건의 시공 사례`;
 
   grid.innerHTML = pageItems.map(c => {
-    const total    = Object.values(c.costs).reduce((a, v) => a + v, 0);
-    const photoUrl = casePhotoMap[c.id] || casePhotoMap[`${c.id}-1`] || (c.photos && c.photos[0]) || null;
-    const thumbContent = photoUrl
+    const total    = caseTotal(c);
+    const ba       = caseBA(c);
+    const photoUrl = caseMainPhoto(c);
+    const metaParts = [c.duration ? `시공 ${c.duration}일` : '', c.date ? c.date.slice(0, 7) : ''].filter(Boolean);
+    const thumbContent = (ba && !casePhotoMap[c.id])
+      ? caseBASplitHtml(c, ba)
+      : photoUrl
       ? `<img src="${photoUrl}" alt="${c.title}" class="thumb-img" loading="lazy" decoding="async" />`
       : `<div class="thumb-placeholder"><span class="thumb-icon">🚿</span><span class="thumb-concept">${c.concept}</span></div>`;
     return `
       <article class="case-card" data-id="${c.id}" tabindex="0" role="button" aria-label="${c.title} 자세히 보기">
         <div class="case-thumb" style="background:${c.thumbBg}">${thumbContent}</div>
         <div class="case-body">
-          <div class="case-chips">
-            <span class="chip chip-region">${c.region} · ${c.district}</span>
-            <span class="chip chip-loc">${c.location}</span>
-            <span class="chip chip-size">${c.apt_size}평</span>
-          </div>
+          <div class="case-chips">${caseChipsHtml(c)}</div>
           <h3 class="case-title">${c.title}</h3>
-          <p class="case-meta">시공 ${c.duration}일 · ${c.date.slice(0, 7)}</p>
+          ${metaParts.length ? `<p class="case-meta">${metaParts.join(' · ')}</p>` : ''}
           <p class="case-desc">${c.desc}</p>
           <div class="case-footer">
-            <span class="case-total">총 ${formatWon(total)}</span>
+            <span class="case-total">${total ? `총 ${formatWon(total)}` : '📷 시공 전·후 보기'}</span>
             <span class="btn-detail">자세히 보기 →</span>
           </div>
         </div>
@@ -734,7 +757,8 @@ function openAboutLightbox(photos, idx) {
 
 function closeAboutLightbox() {
   document.getElementById('aboutLightbox').classList.add('hidden');
-  document.body.style.overflow = '';
+  const _cm = document.getElementById('caseModal');
+  document.body.style.overflow = (_cm && !_cm.classList.contains('hidden')) ? 'hidden' : '';
 }
 
 function aboutLbGoTo(idx) {
@@ -795,12 +819,14 @@ function openModal(id) {
   if (!c) return;
   currentModalCaseId = id;
 
-  const total = Object.values(c.costs).reduce((a, v) => a + v, 0);
-  const matTotal = c.materials.reduce((a, m) => a + m.qty * m.unit_price, 0);
+  const total = caseTotal(c);
+  const mats = c.materials || [];
+  const matTotal = mats.reduce((a, m) => a + m.qty * m.unit_price, 0);
+  const ba = caseBA(c);
 
   document.getElementById('modalTitle').textContent = c.title;
   document.getElementById('modalMeta').textContent =
-    `${c.region} ${c.district} · ${c.location} · ${c.apt_size}평 · 시공 ${c.duration}일 · ${c.date}`;
+    [`${c.region} ${c.district}`, c.location, c.apt_size ? `${c.apt_size}평` : '', c.duration ? `시공 ${c.duration}일` : '', c.date].filter(Boolean).join(' · ');
 
   // 갤러리 — admin에서 업로드한 사진 전체 (c001, c001-1, c001-2, ...) 수집
   const uploadedPhotos = (() => {
@@ -816,7 +842,13 @@ function openModal(id) {
   _galleryPhotos = allPhotos;
   _galleryIdx    = 0;
 
-  const galleryHtml = allPhotos.length > 0
+  const galleryHtml = ba
+    ? `<div class="ba-compare">
+        <figure class="ba-fig"><span class="ba-label ba-before">시공 전</span><img src="${ba.before}" alt="${c.title} 시공 전" data-ba="0" decoding="async" /></figure>
+        <figure class="ba-fig"><span class="ba-label ba-after">시공 후</span><img src="${ba.after}" alt="${c.title} 시공 후" data-ba="1" decoding="async" /></figure>
+      </div>
+      <p class="ba-hint">사진을 누르면 크게 볼 수 있습니다.</p>`
+    : allPhotos.length > 0
     ? `<div class="gallery-carousel">
         <div class="gallery-main" id="galMain">
           <img id="galMainImg" class="gallery-main-img" src="${allPhotos[0]}" alt="시공 사진 1" />
@@ -837,24 +869,14 @@ function openModal(id) {
         <div class="photo-slot photo-slot-wide"><span class="photo-slot-text">시공 완료<br><small>사진 등록 예정</small></span></div>
       </div>`;
 
-  // 시공 정보
-  const infoHtml = `
-    <div class="modal-col">
-      <p class="modal-sec-title">시공 정보</p>
-      <table class="info-table">
-        <tr><th>주소</th><td>${c.info.address}</td></tr>
-        <tr><th>아파트</th><td>${c.info.apt_name}</td></tr>
-        <tr><th>욕실 유형</th><td>${c.location}</td></tr>
-        <tr><th>평수</th><td>${c.apt_size}평</td></tr>
-        <tr><th>시공일</th><td>${c.date}</td></tr>
-        <tr><th>시공기간</th><td>${c.duration}일</td></tr>
-        <tr><th>콘셉트</th><td>${c.concept}</td></tr>
-      </table>
-      <p class="modal-desc">${c.desc}</p>
-      <div class="modal-tags">${c.tags.map(t => `<span class="tag">#${t}</span>`).join('')}</div>
-    </div>
-    <div class="modal-col">
-      <p class="modal-sec-title">공사비 내역</p>
+  // 시공 정보 (값이 있는 항목만 표시)
+  const infoRows = [
+    ['주소', c.info && c.info.address], ['아파트', c.info && c.info.apt_name],
+    ['욕실 유형', c.location], ['평수', c.apt_size ? `${c.apt_size}평` : ''],
+    ['시공일', c.date], ['시공기간', c.duration ? `${c.duration}일` : ''], ['콘셉트', c.concept],
+  ].filter(r => r[1]);
+  const costHtml = total
+    ? `<p class="modal-sec-title">공사비 내역</p>
       <table class="est-table">
         <tbody>
           <tr><td>자재비</td><td>${formatWon(c.costs.material)}</td></tr>
@@ -866,16 +888,27 @@ function openModal(id) {
         <tfoot>
           <tr><td><strong>총 합계</strong></td><td><strong>${formatWon(total)}</strong></td></tr>
         </tfoot>
+      </table>`
+    : `<p class="modal-sec-title">시공 비용 안내</p>
+      <p class="modal-cost-note">시공 비용은 욕실 크기, 철거 범위, 선택 자재에 따라 달라집니다.<br>무료 견적으로 예상 비용을 확인해 보세요.</p>`;
+  const infoHtml = `
+    <div class="modal-col">
+      <p class="modal-sec-title">시공 정보</p>
+      <table class="info-table">
+        ${infoRows.map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('')}
       </table>
-    </div>`;
+      <p class="modal-desc">${c.desc || ''}</p>
+      <div class="modal-tags">${(c.tags || []).map(t => `<span class="tag">#${t}</span>`).join('')}</div>
+    </div>
+    <div class="modal-col">${costHtml}</div>`;
 
-  // 자재 내역
-  const matHtml = `
+  // 자재 내역 (자재 정보가 있는 사례만)
+  const matHtml = mats.length ? `
     <p class="modal-sec-title" style="margin-top:0">선택 자재 내역</p>
     <table class="est-table mat-table">
       <thead><tr><th>품목</th><th>브랜드</th><th>수량</th><th class="tr">금액</th></tr></thead>
       <tbody>
-        ${c.materials.map(m => `
+        ${mats.map(m => `
           <tr>
             <td>${m.name}</td>
             <td class="muted">${m.brand}</td>
@@ -886,16 +919,21 @@ function openModal(id) {
       <tfoot>
         <tr><td colspan="3"><strong>자재 소계</strong></td><td class="tr"><strong>${formatWon(matTotal)}</strong></td></tr>
       </tfoot>
-    </table>`;
+    </table>` : '';
 
   document.getElementById('modalBody').innerHTML = `
     ${galleryHtml}
     <div class="modal-grid">${infoHtml}</div>
-    <div class="modal-mat">${matHtml}</div>
+    ${matHtml ? `<div class="modal-mat">${matHtml}</div>` : ''}
   `;
 
+  // 전/후 사진 확대 보기
+  document.querySelectorAll('#modalBody .ba-fig img').forEach(img => {
+    img.addEventListener('click', () => openAboutLightbox([ba.before, ba.after], Number(img.dataset.ba)));
+  });
+
   // 캐러셀 이벤트 바인딩 (DOM 삽입 후)
-  if (_galleryPhotos.length > 1) initGalleryEvents();
+  if (!ba && _galleryPhotos.length > 1) initGalleryEvents();
 
   document.getElementById('caseModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -919,7 +957,8 @@ function saveCaseRefAndNavigate() {
   const c = CASES.find(x => x.id === currentModalCaseId);
   localStorage.setItem('bathroom_force_step1', '1');
   if (!c) { location.href = './bathroom.html'; return; }
-  const totalCost = Object.values(c.costs).reduce((a, v) => a + v, 0);
+  const totalCost = caseTotal(c);
+  if (!totalCost) { location.href = './bathroom.html'; return; }   // 비용 정보가 없는 사례는 참고 사례 연동 없이 견적 시작
   const ref = {
     id: c.id, title: c.title, concept: c.concept,
     region: c.region, district: c.district, location: c.location,
