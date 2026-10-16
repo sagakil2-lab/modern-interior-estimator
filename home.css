@@ -120,7 +120,7 @@ img { max-width: 100%; display: block; }
 }
 .hero-bg {
   position: absolute; inset: 0;
-  background: url('./images/modern/bg_title2.png') center/cover no-repeat;
+  background: url('./images/modern/bg_title2.webp') center/cover no-repeat;
 }
 .hero-overlay {
   position: absolute; inset: 0;
