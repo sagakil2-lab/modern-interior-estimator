@@ -332,3 +332,11 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(19,87,197,.12);bo
   .topbar h1{font-size:1.15rem}
   .steps li.active{font-size:.8rem}
 }
+
+/* 욕실 1과 같은 자재를 나머지 욕실에 적용 (STEP 3·4) */
+.same-first-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-4px 0 16px;padding:12px 14px;border:1px dashed #b8d0ff;border-radius:14px;background:#f5f9ff}
+.same-first-btn{white-space:normal;text-align:left}
+.same-first-hint{flex:1 1 220px;font-size:.84rem;line-height:1.55;color:var(--muted)}
+.same-first-hint.ok{color:#166534;font-weight:700}
+@media print{.same-first-bar{display:none!important}}
+@media (max-width:760px){.same-first-bar{flex-direction:column;align-items:stretch;gap:8px}.same-first-btn{width:100%;text-align:center}.same-first-hint{flex:0 0 auto}}

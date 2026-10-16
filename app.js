@@ -1402,6 +1402,78 @@ function applyRecommendation(index, recommendation) {
   renderAll();
 }
 
+// ── 욕실 1의 자재를 나머지 욕실(욕실 2·3)에 그대로 복사 ─────────────────────────
+// 철거·샤워 구조·천장 교체 같은 '욕실별 조건'은 그대로 두고, 선택한 자재만 복사한다.
+// 타일 수량은 욕실 크기(유형)별로 자동 계산되므로 복사해도 각 욕실에 맞게 산출된다.
+let _sameFirstNotice = '';
+let _sameFirstTimer = null;
+function setSameFirstNotice(msg) {
+  _sameFirstNotice = msg;
+  clearTimeout(_sameFirstTimer);
+  _sameFirstTimer = setTimeout(() => { _sameFirstNotice = ''; renderSameAsFirst(); }, 9000);
+}
+function bathroom1HasItems() {
+  return state.bathrooms.length > 0 && Object.keys(state.bathrooms[0].selectedItems || {}).length > 0;
+}
+function bathroomHasItems(i) { return Object.keys(state.bathrooms[i].selectedItems || {}).length > 0; }
+function bathroomIndexLabel(indexes) { return '욕실 ' + indexes.map(i => i + 1).join('·'); }
+
+function copyBathroom1ToOthers(targetIndexes) {
+  const src = state.bathrooms[0];
+  const skipped = [];
+  targetIndexes.forEach(i => {
+    const dst = state.bathrooms[i];
+    const items = JSON.parse(JSON.stringify(src.selectedItems || {}));
+    const overrides = JSON.parse(JSON.stringify(src.manualOverrides || {}));
+    if (!(dst.needCeilingReplace ?? true)) { delete items.ceiling; delete overrides.ceiling; }   // 천장 교체를 하지 않는 욕실은 천장재 제외
+    if (src.showerType !== dst.showerType && items.partition) {                                   // 샤워 구조가 다르면 파티션/부스/욕조는 복사하지 않음
+      skipped.push(dst.name);
+      delete items.partition; delete overrides.partition;
+    }
+    dst.selectedItems = items;
+    dst.manualOverrides = overrides;
+    dst.lastAppliedRecommendation = src.lastAppliedRecommendation ? `${src.lastAppliedRecommendation} (욕실 1과 동일)` : null;
+    dst.catalogWizardMode = false;   // 복사된 자재를 전체 목록에서 바로 고칠 수 있게
+  });
+  setSameFirstNotice(`✅ ${bathroomIndexLabel(targetIndexes)}에 욕실 1과 같은 자재를 적용했습니다. 욕실 탭에서 필요한 자재만 따로 바꿀 수 있어요.` +
+    (skipped.length ? ` (${skipped.join(', ')}은 샤워 구조가 달라 파티션/부스는 복사하지 않았으니 직접 선택해 주세요)` : ''));
+  saveState();
+  renderAll();
+}
+
+// STEP 3·4 상단의 "욕실 1과 같은 자재 적용" 버튼 영역
+function renderSameAsFirst() {
+  ['sameFirstBar3', 'sameFirstBar4'].forEach(id => {
+    const box = document.getElementById(id);
+    if (!box) return;
+    if (state.bathrooms.length < 2) { box.innerHTML = ''; box.style.display = 'none'; return; }
+    box.style.display = '';
+    const ready = bathroom1HasItems();
+    const label = bathroomIndexLabel(state.bathrooms.map((_, i) => i).filter(i => i > 0));
+    const hint = _sameFirstNotice
+      ? `<span class="same-first-hint ok">${_sameFirstNotice}</span>`
+      : `<span class="same-first-hint">${ready ? '욕실 1에서 선택한 자재를 그대로 복사합니다. 복사한 뒤 각 욕실에서 따로 수정할 수 있어요.' : '먼저 욕실 1의 자재를 선택하면 사용할 수 있어요.'}</span>`;
+    box.innerHTML = `<button type="button" class="secondary same-first-btn" data-same-first ${ready ? '' : 'disabled'}>📋 ${label}에 욕실 1과 같은 자재 적용</button>${hint}`;
+  });
+}
+
+function handleSameFirstClick() {
+  if (!bathroom1HasItems()) return;
+  const targets = state.bathrooms.map((_, i) => i).filter(i => i > 0);
+  const withItems = targets.filter(bathroomHasItems);
+  if (withItems.length && !confirm(`${bathroomIndexLabel(withItems)}에 이미 선택한 자재가 있습니다.\n욕실 1과 같은 자재로 바꿀까요?`)) return;
+  copyBathroom1ToOthers(targets);
+}
+
+// '다음' 버튼에서 자재가 비어 있는 욕실이 있을 때: 욕실 1이 선택돼 있으면 복사 후 진행할지 묻는다.
+// 반환: true = 복사하고 진행, false = 진행하지 않음, null = 이 기능으로 처리할 수 없음(기존 안내 사용)
+function offerCopyFromFirst(missingIdx) {
+  if (missingIdx.includes(0) || !bathroom1HasItems()) return null;
+  const ok = confirm(`${bathroomIndexLabel(missingIdx)}은(는) 아직 자재가 선택되지 않았습니다.\n욕실 1과 같은 자재로 적용하고 다음 단계로 넘어갈까요?\n\n(철거·샤워 구조 같은 욕실별 조건은 그대로 유지됩니다)`);
+  if (ok) copyBathroom1ToOthers(missingIdx);
+  return ok;
+}
+
 function openReplaceModal(bathroomIndex, group) {
   const items = catalog.filter(i => i.group === group).sort((a, b) => a.price - b.price);
   if (!items.length) return;
@@ -2055,6 +2127,7 @@ function renderAll() {
   renderCatalogWizard();
   renderCatalog();
   renderRecommendations();
+  renderSameAsFirst();
   renderCartSummary();
   renderEstimateDocument();
 }
@@ -2231,22 +2304,25 @@ async function submitInquiry() {
 function registerEvents() {
   document.querySelectorAll('[data-next-step]').forEach(btn => btn.addEventListener('click', () => {
     const nextStep = Number(btn.dataset.nextStep);
-    if (nextStep === 4) {
-      const missing = state.bathrooms.filter(b => Object.keys(b.selectedItems || {}).length === 0).map(b => b.name);
-      if (missing.length > 0) {
-        alert(`아직 자재를 선택하지 않은 욕실이 있습니다: ${missing.join(', ')}\n각 욕실 탭으로 이동하여 자재를 선택하거나 추천안을 적용해 주세요.`);
-        return;
-      }
-    }
-    if (nextStep === 5) {
-      const missing = state.bathrooms.filter(b => Object.keys(b.selectedItems || {}).length === 0).map(b => b.name);
-      if (missing.length > 0) {
-        alert(`추천안이 적용되지 않은 욕실이 있습니다: ${missing.join(', ')}\n각 욕실의 추천 카드를 클릭하여 안을 선택해 주세요.`);
+    if (nextStep === 4 || nextStep === 5) {
+      const missingIdx = state.bathrooms.map((_, i) => i).filter(i => !bathroomHasItems(i));
+      if (missingIdx.length > 0) {
+        const offered = offerCopyFromFirst(missingIdx);       // 욕실 1이 선택돼 있으면 같은 자재로 복사 제안
+        if (offered === true) { setStep(nextStep); return; }
+        if (offered === false) return;                          // 취소 → 이 단계에 머무름
+        const names = missingIdx.map(i => state.bathrooms[i].name).join(', ');
+        alert(nextStep === 4
+          ? `아직 자재를 선택하지 않은 욕실이 있습니다: ${names}\n각 욕실 탭으로 이동하여 자재를 선택하거나 추천안을 적용해 주세요.`
+          : `추천안이 적용되지 않은 욕실이 있습니다: ${names}\n각 욕실의 추천 카드를 클릭하여 안을 선택해 주세요.`);
         return;
       }
     }
     setStep(nextStep);
   }));
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-same-first]');
+    if (b && !b.disabled) handleSameFirstClick();
+  });
   document.querySelectorAll('[data-prev-step]').forEach(btn => btn.addEventListener('click', () => setStep(Number(btn.dataset.prevStep))));
   document.querySelectorAll('[data-skip-step]').forEach(btn => btn.addEventListener('click', () => setStep(Number(btn.dataset.skipStep))));
   el.catalogSearch.addEventListener('input', renderCatalog);
