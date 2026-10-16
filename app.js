@@ -19,7 +19,6 @@ const DEFAULT_WORK_COSTS = {
   waterproof_basic:   150000,
   ceiling:            250000,
   electrical:         180000,
-  heatingFanExtra:    120000,
   fixtureInstall:     320000,
   cleanup:            150000,
   luxuryFactor:       12,
@@ -57,6 +56,7 @@ let catalog = [
   { id:'fan-basic', group:'fan', category:'환풍기', brand:'힘펠', name:'욕실 환풍기 기본형', model:'JV-201M', price:49000, unit:'EA', desc:'일반형 욕실 환풍기' },
   { id:'fan-mid', group:'fan', category:'환풍기', brand:'힘펠', name:'저소음 환풍기 중급형', model:'C2-100LF', price:89000, unit:'EA', desc:'저소음 환풍기' },
   { id:'fan-premium', group:'fan', category:'환풍기', brand:'힘펠', name:'휴젠뜨 난방/환기형', model:'FHD3-C150P', price:560000, unit:'EA', desc:'난방/제습/환기 복합형' },
+  { id:'fan-hempel-nova', group:'fan', category:'환풍기', brand:'힘펠', name:'휴젠뜨 노바F 난방/제습형', model:'FHD2-C150P-NOVA', price:500000, unit:'EA', desc:'온풍·제습·환기 복합형 (블루투스 연동, 전동댐퍼)' },
   { id:'fan-hempel-timer', group:'fan', category:'환풍기', brand:'힘펠', name:'타이머 환풍기', model:'C-15T', price:95000, unit:'EA', desc:'타이머 내장 자동 꺼짐 환풍기' },
   { id:'fan-hempel-humid', group:'fan', category:'환풍기', brand:'힘펠', name:'습도감지 자동 환풍기', model:'C2-100DH', price:120000, unit:'EA', desc:'습도 자동 감지 환기 제어' },
   { id:'fan-hempel-led', group:'fan', category:'환풍기', brand:'힘펠', name:'LED 조명 환풍기', model:'C-15PE', price:145000, unit:'EA', desc:'LED 조명 + 환기 일체형' },
@@ -803,7 +803,7 @@ function getBaseWorks(bathroom) {
     { key: '철거 공사',    amount: { partial: c.demolition_partial, full: c.demolition_full, overlay: c.demolition_overlay }[bathroom.demolitionType] || 0 },
     { key: '설비/배관 공사', amount: bathroom.needPlumbingMove ? c.plumbing : 0 },
     { key: '방수 공사',    amount: bathroom.needWaterproofReinforce ? c.waterproof : c.waterproof_basic },
-    { key: '천장/전기 공사', amount: (bathroom.needCeilingReplace ? c.ceiling : 0) + c.electrical + (bathroom.needHeatingFan ? c.heatingFanExtra : 0) },
+    { key: '천장/전기 공사', amount: (bathroom.needCeilingReplace ? c.ceiling : 0) + c.electrical },
     { key: '기구 설치 공사', amount: c.fixtureInstall },
     { key: '폐기물/청소',  amount: c.cleanup },
   ];
@@ -1094,7 +1094,7 @@ function renderSingleBathroomForm() {
         ${optCard('needPlumbingMove',        '배관 이설',       '배관 위치 변경 필요',    '+350,000원')}
         ${optCard('needWaterproofReinforce', '방수 보강',       '강화 방수 처리',         '+280,000원')}
         ${optCard('needCeilingReplace',      '천장 교체',       '천장 마감재 교체',       '+250,000원')}
-        ${optCard('needHeatingFan',          '난방/제습 환풍기', '열선·제습 복합형 교체',  '+120,000원')}
+        ${optCard('needHeatingFan',          '난방/제습 환풍기', '힘펠 휴젠뜨 등 난방·제습형', '제품가로 반영')}
         ${optCard('needStorageUpgrade',      '수납 업그레이드', '수납장 추가 희망',        '')}
         ${optCard('needLuxuryFinish',        '고급 마감',       '자재+공사비의 12% 추가', '+12%')}
       </div>
@@ -1253,6 +1253,15 @@ function renderCatalog() {
   });
   const tpl = document.getElementById('catalogCardTemplate');
   el.catalogContainer.innerHTML = '';
+  // '난방/제습 환풍기' 옵션을 켠 욕실: 환풍기 목록에서 난방·제습형을 먼저 보여준다
+  const fanOnly = filtered.length > 0 && filtered.every(i => i.group === 'fan');
+  if (fanOnly && bathroom.needHeatingFan && filtered.some(isHeatingFan)) {
+    filtered.sort((a, b) => (isHeatingFan(b) ? 1 : 0) - (isHeatingFan(a) ? 1 : 0) || a.price - b.price);
+    const hint = document.createElement('div');
+    hint.className = 'catalog-hint';
+    hint.textContent = '🔥 난방/제습 환풍기를 선택하셨어요. 난방·제습형 제품을 먼저 보여드립니다. 제품 가격이 그대로 견적에 반영돼요.';
+    el.catalogContainer.appendChild(hint);
+  }
   filtered.forEach(item => {
     const frag = tpl.content.cloneNode(true);
     const thumb = frag.querySelector('.thumb');
@@ -1325,9 +1334,19 @@ function renderCatalog() {
   });
 }
 
+// 난방·제습·온풍 기능이 있는 환풍기인지 (열회수형 환기장치 등은 제외)
+function isHeatingFan(item) {
+  return !!item && item.group === 'fan' && /난방|제습|온풍/.test(`${item.name} ${item.desc || ''}`);
+}
+
 function buildRecommendationSeed(ratio) {
   const pick = (group, r) => {
     const items = catalog.filter(i => i.group === group).sort((a, b) => a.price - b.price);
+    if (!items.length) return null;
+    return items[Math.min(Math.floor(r * items.length), items.length - 1)];
+  };
+  const pickFan = r => {
+    const items = catalog.filter(i => i.group === 'fan' && !isHeatingFan(i)).sort((a, b) => a.price - b.price);
     if (!items.length) return null;
     return items[Math.min(Math.floor(r * items.length), items.length - 1)];
   };
@@ -1338,7 +1357,7 @@ function buildRecommendationSeed(ratio) {
     basin:         pick('basin',         ratio),
     basinFaucet:   pick('basinFaucet',   ratio),
     showerFaucet:  pick('showerFaucet',  ratio),
-    fan:           pick('fan',           ratio),
+    fan:           pickFan(ratio),       // '난방/제습 환풍기' 옵션을 켜지 않았다면 난방·제습형은 추천에서 제외
     ceiling:       pick('ceiling',       ratio),
     mirrorCabinet: pick('mirrorCabinet', ratio),
     drain:         pick('drain',         Math.min(ratio * 1.5, 1)),
@@ -1369,7 +1388,7 @@ function buildRecommendationsForBathroom(bathroom) {
   ];
   const partitions = catalog.filter(i => i.group === 'partition').sort((a, b) => a.price - b.price);
   const pickPartition = r => partitions[Math.min(Math.floor(r * partitions.length), partitions.length - 1)];
-  const heatFans = catalog.filter(i => i.group === 'fan' && i.price >= 200000).sort((a, b) => a.price - b.price);
+  const heatFans = catalog.filter(isHeatingFan).sort((a, b) => a.price - b.price);   // 난방/제습 옵션을 켰을 때 쓰는 후보
 
   // 사용자가 직접 선택한 항목 목록 (추천안 일괄 적용 항목은 제외)
   const pinned = bathroom.manualOverrides || {};

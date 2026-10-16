@@ -348,3 +348,6 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(19,87,197,.12);bo
 .quick-request-btn{white-space:normal;text-align:center}
 @media print{.quick-request-box{display:none!important}}
 @media (max-width:760px){.quick-request-btn{width:100%}}
+
+/* 자재 선택: 난방/제습 환풍기 안내 문구 */
+.catalog-hint{grid-column:1/-1;padding:10px 14px;border:1px solid #ffd9a8;border-radius:12px;background:#fff8ed;color:#9a4d00;font-size:.86rem;font-weight:700;line-height:1.55}

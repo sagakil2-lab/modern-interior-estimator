@@ -273,6 +273,7 @@ window._DEFAULT_CATALOG_DATA = [
   // === 환풍기 ===
   { id:'fan-mid', group:'fan', category:'환풍기', brand:'힘펠', name:'저소음 환풍기 중급형', model:'C2-100LF', price:89000, unit:'EA', desc:'저소음 환풍기', url:'https://www.himpelmall.com/mall/m_mall_detail.php?ps_goid=701' },
   { id:'fan-premium', group:'fan', category:'환풍기', brand:'힘펠', name:'휴젠뜨 난방/환기형', model:'FHD3-C150P', price:560000, unit:'EA', desc:'난방/제습/환기 복합형', url:'https://prod.danawa.com/info/?pcode=18189407' },
+  { id:'fan-hempel-nova', group:'fan', category:'환풍기', brand:'힘펠', name:'휴젠뜨 노바F 난방/제습형', model:'FHD2-C150P-NOVA', price:500000, unit:'EA', desc:'온풍·제습·환기 복합형 (블루투스 연동, 전동댐퍼)' },
   { id:'fan-hempel-timer', group:'fan', category:'환풍기', brand:'힘펠', name:'타이머 환풍기', model:'C-15T', price:95000, unit:'EA', desc:'타이머 내장 자동 꺼짐 환풍기' },
   { id:'fan-hempel-humid', group:'fan', category:'환풍기', brand:'힘펠', name:'습도감지 자동 환풍기', model:'C2-100DH', price:120000, unit:'EA', desc:'습도 자동 감지 환기 제어' },
   { id:'fan-hempel-led', group:'fan', category:'환풍기', brand:'힘펠', name:'LED 조명 환풍기', model:'C-15PE', price:145000, unit:'EA', desc:'LED 조명 + 환기 일체형' },
