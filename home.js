@@ -304,12 +304,13 @@ const ABOUT_DATA = {
     },
   ],
   location: {
-    address: '서울시 강남구 테헤란로 123 (삼성동)',
-    tel: '010-0000-0000',
-    email: 'info@modern-interior.kr',
-    kakao: '@모던인테리어',
-    hours: '평일 09:00 – 18:00 · 토요일 10:00 – 15:00',
-    parking: '건물 내 주차 가능 (1시간 무료)',
+    rep: '유종태',
+    address: '인천광역시 남동구 능허대로 559번길 27 3층',
+    tel: '010-9544-2206',
+    email: 'sagakil2@naver.com',
+    kakao: 'sagakil2',
+    hours: '평일 09:00 – 18:00',
+    parking: '',
   },
   teams: [],
 };
@@ -466,23 +467,33 @@ function renderPartnersPanel() {
 
 function renderLocationPanel() {
   const loc = ABOUT_DATA.location;
+  // 지도 검색용 주소: 층·호수는 빼고 도로명 주소까지만 사용
+  const mapAddr = String(loc.address || '').replace(/\s*\d+\s*층.*$/, '').trim();
+  const q = encodeURIComponent(mapAddr);
+  const telHref = String(loc.tel || '').replace(/[^\d+]/g, '');
+  const row = (icon, html) => html ? `<li><span class="loc-icon">${icon}</span><span>${html}</span></li>` : '';
   return `
     <div class="location-wrap">
-      <div class="location-map-placeholder">
-        <span class="location-map-icon">📍</span>
-        <p class="location-map-text">지도</p>
-        <p class="location-map-sub">실제 운영 시 네이버·카카오 지도<br>임베드로 교체하세요</p>
+      <div class="location-map-frame">
+        <iframe src="https://www.google.com/maps?q=${q}&hl=ko&z=17&output=embed"
+                title="${mapAddr} 위치 지도" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
       </div>
       <div class="location-info">
         <h4 class="location-info-title">오시는 길</h4>
         <ul class="location-list">
-          <li><span class="loc-icon">📍</span><span>${loc.address}</span></li>
-          <li><span class="loc-icon">📞</span><span>${loc.tel}</span></li>
-          <li><span class="loc-icon">✉️</span><span>${loc.email}</span></li>
-          <li><span class="loc-icon">💬</span><span>카카오톡 ${loc.kakao}</span></li>
-          <li><span class="loc-icon">🕐</span><span>${loc.hours}</span></li>
-          <li><span class="loc-icon">🚗</span><span>${loc.parking}</span></li>
+          ${row('📍', loc.address)}
+          ${row('👤', loc.rep ? `대표 ${loc.rep}` : '')}
+          ${row('📞', loc.tel ? `<a href="tel:${telHref}">${loc.tel}</a>` : '')}
+          ${row('✉️', loc.email ? `<a href="mailto:${loc.email}">${loc.email}</a>` : '')}
+          ${row('💬', loc.kakao ? `카카오톡 ${loc.kakao}` : '')}
+          ${row('🕐', loc.hours)}
+          ${row('🚗', loc.parking)}
         </ul>
+        <div class="location-links">
+          <a class="location-link-btn" href="https://map.naver.com/p/search/${q}" target="_blank" rel="noopener">네이버 지도</a>
+          <a class="location-link-btn" href="https://map.kakao.com/?q=${q}" target="_blank" rel="noopener">카카오맵</a>
+          <a class="location-link-btn" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">구글 지도</a>
+        </div>
       </div>
     </div>`;
 }
