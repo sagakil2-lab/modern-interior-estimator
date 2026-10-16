@@ -35,7 +35,10 @@ function doPost(e) {
     if (cache.get('inq:' + inq.id)) return json_({ ok: true, duplicate: true });
 
     const grand = (inq.project && inq.project.grand) || 0;
-    const subject = `[신규 욕실견적] ${c.customerName} · ${won_(grand)}`;
+    const quick = !!inq.quick;   // 견적 단계를 건너뛰고 기본 정보만 보낸 '간편 의뢰'
+    const subject = quick
+      ? `[간편 견적의뢰] ${c.customerName} · ${c.customerPhone}`
+      : `[신규 욕실견적] ${c.customerName} · ${won_(grand)}`;
     const body = buildBody_(inq, c, grand, payload.memo);
 
     // 메일 발송 실패는 고객에게 '실패'로 알려야 하므로 숨기지 않음
@@ -107,6 +110,21 @@ function handleChat_(p) {
 }
 
 function buildBody_(inq, c, grand, memo) {
+  if (inq.quick) {   // 간편 의뢰: 견적 금액·자재 없이 고객 기본 정보만
+    const w = Utilities.formatDate(new Date(inq.submittedAt || Date.now()), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+    return [
+      '■ 간편 견적의뢰 (견적 단계를 건너뛰고 기본 정보만 입력)',
+      `이름: ${c.customerName}`,
+      `연락처: ${c.customerPhone}`,
+      `현장명/주소: ${[c.projectName, c.address].filter(Boolean).join(' / ') || '-'}`,
+      `평수: ${c.aptSize || '-'}  욕실 수: ${c.bathroomCount || '-'}개`,
+      `공사 희망: ${c.scheduleStart || '-'} ~ ${c.scheduleEnd || '-'}`,
+      `총 예산: ${c.totalBudget ? c.totalBudget + '만원' : '-'}`,
+      memo ? `\n요청사항:\n${memo}` : '',
+      `\n접수 시각: ${w}  (접수ID: ${inq.id})`,
+      '※ 견적 금액·자재 선택이 없는 의뢰입니다. 연락해서 상담을 진행하세요.'
+    ].filter(x => x !== '').join('\n');
+  }
   const when = Utilities.formatDate(new Date(inq.submittedAt || Date.now()), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
   const L = [];
   L.push('■ 고객 정보');

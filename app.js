@@ -2197,18 +2197,32 @@ function loadInquiries() {
   try { return JSON.parse(localStorage.getItem(INQUIRY_KEY) || '[]'); } catch { return []; }
 }
 
-function openInquiryModal() {
+// 간편 의뢰: 견적 단계(구조 조건·자재 선택)를 모두 건너뛰고 STEP 1 기본 정보만으로 담당자에게 상담을 요청
+let _inquiryQuick = false;
+const QUICK_MEMO_PREFIX = '※ 견적 단계를 건너뛰고 기본 정보만 입력한 간편 의뢰입니다. (자재 선택·견적 금액 없음 — 연락해서 상담해 주세요)';
+
+function openInquiryModal(opts) {
+  const quick = !!(opts && opts.quick === true);
+  _inquiryQuick = quick;
   const project = getProjectTotals();
   const info = state.info;
   const body = document.getElementById('inquiryModalBody');
   const hasCustomer = info.customerName || info.customerPhone;
+  const titleEl = document.querySelector('#inquiryModal .reco-modal-header h2');
+  const subEl = document.querySelector('#inquiryModal .reco-modal-header p');
+  if (titleEl) titleEl.textContent = quick ? '담당자에게 바로 견적 의뢰' : '견적 문의 접수';
+  if (subEl) subEl.textContent = quick ? '입력하신 기본 정보로 의뢰를 접수합니다' : '아래 내용으로 견적 의뢰를 접수합니다';
+  document.getElementById('inquiryModalSubmit').textContent = quick ? '담당자에게 의뢰하기' : '문의 접수하기';
+  const pending = '<span style="color:var(--muted)">미입력</span>';
   body.innerHTML = `
+    ${quick ? '<p style="margin:0 0 12px;font-size:.87rem;line-height:1.7;background:#f3f7ff;border:1px solid #d6e4ff;border-radius:10px;padding:10px 14px">자재 선택 없이 <strong>기본 정보만</strong> 전달됩니다. 담당자가 연락드려 상담한 뒤 정확한 견적을 안내해 드립니다.</p>' : ''}
     <table class="product-detail-table" style="margin-bottom:16px">
-      <tr><th>고객명</th><td>${info.customerName || '<span style="color:var(--muted)">미입력</span>'}</td></tr>
-      <tr><th>연락처</th><td>${info.customerPhone || '<span style="color:var(--muted)">미입력</span>'}</td></tr>
-      <tr><th>주소</th><td>${info.address || '<span style="color:var(--muted)">미입력</span>'}</td></tr>
+      <tr><th>고객명</th><td>${info.customerName || pending}</td></tr>
+      <tr><th>연락처</th><td>${info.customerPhone || pending}</td></tr>
+      <tr><th>주소</th><td>${info.address || pending}</td></tr>
       <tr><th>욕실 수</th><td>${info.bathroomCount}개</td></tr>
-      <tr><th>총 견적액</th><td><strong style="color:var(--brand)">${formatWon(project.grand)}</strong></td></tr>
+      ${quick ? `${info.aptSize ? `<tr><th>아파트 평수</th><td>${info.aptSize}평</td></tr>` : ''}${info.scheduleStart ? `<tr><th>희망 공사</th><td>${info.scheduleStart}${info.scheduleEnd ? ' ~ ' + info.scheduleEnd : ''}</td></tr>` : ''}${info.totalBudget ? `<tr><th>총 예산</th><td>${info.totalBudget}만원</td></tr>` : ''}`
+             : `<tr><th>총 견적액</th><td><strong style="color:var(--brand)">${formatWon(project.grand)}</strong></td></tr>`}
     </table>
     ${!hasCustomer ? '<p style="color:#b45309;font-size:.87rem;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:12px">고객 정보(이름·연락처)가 없으면 담당자가 연락하기 어렵습니다. STEP 1에서 입력 후 접수해 주세요.</p>' : ''}
     <label style="display:block;font-size:.85rem;font-weight:700;margin-bottom:6px">요청사항 · 통화 가능 시간 (선택)</label>
@@ -2244,8 +2258,14 @@ async function submitInquiry() {
     showInquiryError('개인정보 수집·이용에 동의해 주세요.');
     return;
   }
-  const project = getProjectTotals();
-  const bathroomData = state.bathrooms.map((b, i) => {
+  let project, bathroomData;
+  if (_inquiryQuick) {
+    // 간편 의뢰: 구조 조건·자재·금액 없이 STEP 1 기본 정보만
+    project = { materialTotal: 0, workTotal: 0, luxury: 0, reserve: 0, extraTileTotal: 0, extraTileItems: [], grand: 0 };
+    bathroomData = [];
+  } else {
+  project = getProjectTotals();
+  bathroomData = state.bathrooms.map((b, i) => {
     const t = getBathroomTotals(i);
     return {
       name: b.name, type: b.type,
@@ -2264,15 +2284,18 @@ async function submitInquiry() {
       materialTotal: t.materialTotal, workTotal: t.workTotal, luxury: t.luxury, reserve: t.reserve, grand: t.grand
     };
   });
+  }
   const inquiry = {
     id: 'inq-' + Date.now(),
     submittedAt: new Date().toISOString(),
     status: 'new',
+    quick: _inquiryQuick,
     customer: { ...state.info },
     project: { materialTotal: project.materialTotal, workTotal: project.workTotal, luxury: project.luxury, reserve: project.reserve, extraTileTotal: project.extraTileTotal, extraTileItems: project.extraTileItems, grand: project.grand },
     bathrooms: bathroomData
   };
-  const memo = (document.getElementById('inquiryMemo')?.value || '').trim();
+  const userMemo = (document.getElementById('inquiryMemo')?.value || '').trim();
+  const memo = _inquiryQuick ? (QUICK_MEMO_PREFIX + (userMemo ? '\n' + userMemo : '')) : userMemo;
   inquiry.memo = memo;
 
   const submitBtn = document.getElementById('inquiryModalSubmit');
@@ -2280,7 +2303,7 @@ async function submitInquiry() {
   submitBtn.textContent = '전송 중...';
   const result = await window.sendInquiryToAdmin(inquiry, memo);
   submitBtn.disabled = false;
-  submitBtn.textContent = '문의 접수하기';
+  submitBtn.textContent = _inquiryQuick ? '담당자에게 의뢰하기' : '문의 접수하기';
 
   if (!result.ok) {
     const msg = result.error === 'not-configured'
@@ -2351,7 +2374,16 @@ function registerEvents() {
   });
 
   el.printBtn.addEventListener('click', () => showCostNotice(() => window.print()));
-  document.getElementById('inquiryBtn').addEventListener('click', () => showCostNotice(openInquiryModal));
+  document.getElementById('inquiryBtn').addEventListener('click', () => showCostNotice(() => openInquiryModal()));
+  // STEP 1: 견적 작성은 건너뛰고 담당자에게 바로 의뢰
+  document.addEventListener('click', e => {
+    if (!e.target.closest('[data-quick-request]')) return;
+    const name = String(state.info.customerName || '').trim();
+    const digits = String(state.info.customerPhone || '').replace(/\D/g, '');
+    if (!name) { alert('고객명을 입력해 주세요.'); document.getElementById('customerName')?.focus(); return; }
+    if (digits.length < 9 || digits.length > 11) { alert('연락처를 숫자 9~11자리로 정확히 입력해 주세요.'); document.getElementById('customerPhone')?.focus(); return; }
+    openInquiryModal({ quick: true });   // 비용 안내 팝업 없이 바로 접수 창
+  });
   document.getElementById('inquiryModalClose').addEventListener('click', closeInquiryModal);
   document.getElementById('inquiryModalCancel').addEventListener('click', closeInquiryModal);
   document.getElementById('inquiryModalBackdrop').addEventListener('click', closeInquiryModal);

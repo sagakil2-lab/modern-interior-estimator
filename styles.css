@@ -340,3 +340,11 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(19,87,197,.12);bo
 .same-first-hint.ok{color:#166534;font-weight:700}
 @media print{.same-first-bar{display:none!important}}
 @media (max-width:760px){.same-first-bar{flex-direction:column;align-items:stretch;gap:8px}.same-first-btn{width:100%;text-align:center}.same-first-hint{flex:0 0 auto}}
+
+/* STEP 1: 견적 작성을 건너뛰고 담당자에게 바로 의뢰 */
+.quick-request-box{margin:18px 0 12px;padding:16px 18px;border:1px dashed #b8d0ff;border-radius:14px;background:#f5f9ff}
+.quick-request-title{margin:0 0 4px;font-weight:800;font-size:.98rem}
+.quick-request-desc{margin:0 0 12px;font-size:.86rem;line-height:1.65;color:var(--muted)}
+.quick-request-btn{white-space:normal;text-align:center}
+@media print{.quick-request-box{display:none!important}}
+@media (max-width:760px){.quick-request-btn{width:100%}}
