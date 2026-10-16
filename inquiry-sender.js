@@ -1,6 +1,6 @@
 // 견적 문의를 관리자(Google Apps Script 웹앱)로 전송하는 모듈
 // ① Code.gs 를 배포한 뒤 나오는 웹앱 URL(.../exec)을 아래에 붙여 넣으세요.
-window.INQUIRY_ENDPOINT = '';
+window.INQUIRY_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxF3jcSp7cjxrPQAkxqcaOAtNcolOleeWzuvq4QURzun2Dd6_ML8tsQgupcaxkWeg/exec';
 
 // 반환: { ok: true } | { ok: false, error: '...' }
 window.sendInquiryToAdmin = async function (inquiry, memo) {
